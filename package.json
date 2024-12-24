@@ -1,8 +1,10 @@
 {
   "name": "ew-responsive-store",
-  "version": "0.0.1-beta.0",
+  "version": "0.0.1-beta.2",
   "type": "module",
-  "typings": "./typings/index.d.ts",
+  "main": "dist/index.umd.min.js",
+  "module": "dist/index.es.min.js",
+  "typings": "./typings/core/core.d.ts",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
