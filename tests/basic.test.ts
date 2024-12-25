@@ -20,9 +20,10 @@ globalThis.sessionStorage = {
   length: 1
 };
 
-// 模拟 parseStr
 vi.mock('./utils', () => ({
   parseStr: vi.fn().mockReturnValue((val: string) => JSON.parse(val)),
+  isStorageEnabled: vi.fn().mockReturnValue(true),
+  isValidJSON: vi.fn().mockReturnValue(true)
 }));
 
 describe('useStorage', () => {
@@ -99,7 +100,9 @@ describe('useStorage', () => {
   });
 
   it('should trigger immediate effect with immediate: false', () => {
+    (sessionStorage.getItem as any).mockReturnValue({ name:'eveningwater'});
     useStorage('user', { name: 'eveningwater' }, { immediate: false });
-    expect(localStorage.setItem).not.toHaveBeenCalled();
+    // 判断是否支持storage调用了一次
+    expect(localStorage.setItem).toHaveBeenCalledTimes(1);
   });
 });

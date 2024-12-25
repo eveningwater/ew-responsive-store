@@ -1,6 +1,6 @@
 import { WatchOptions, ref, watch } from '@vue/reactivity';
 import { StoreType } from './enum';
-import { parseStr } from './utils';
+import { isStorageEnabled, isValidJSON, parseStr } from './utils';
 export interface StoreOptions extends WatchOptions {
   storage?: StoreType;
 }
@@ -13,17 +13,20 @@ export function useStorage<T>(
     deep: true
   }
 ) {
-  const { storage = StoreType.LOCAL, immediate = true,deep = true,...rest } = options;
+  const { storage = StoreType.LOCAL, immediate = true, deep = true, ...rest } = options;
   const currentStorage =
     storage === StoreType.LOCAL ? localStorage : sessionStorage;
+  if (!isStorageEnabled(currentStorage)) {
+    throw new Error(`[rds error]:${currentStorage} is not enabled!`)
+  }
   const storedValue = currentStorage.getItem(key);
-  const data = storedValue ? parseStr<T>(storedValue)! : initialValue;
+  const data = storedValue && isValidJSON(storedValue) ? parseStr<T>(storedValue)! : initialValue;  
   const value = ref(data);
   value.value = data;
   watch(value, (newValue) => {
     currentStorage.setItem(key, JSON.stringify(newValue));
-  }, { immediate,deep,...rest });
+  }, { immediate, deep, ...rest });
 
   return value;
 }
-export { parseStr }
+export { parseStr, isStorageEnabled, isValidJSON }

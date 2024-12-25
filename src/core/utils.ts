@@ -19,3 +19,23 @@ export const parseStr = <T>(
     }
     return res;
 };
+
+export const isValidJSON = (val: string) => {
+    try {
+        const res = JSON.parse(val);
+        return res !== null;
+    } catch (error) {
+        return false;
+    }
+};
+
+export const isStorageEnabled = (storage: Storage) => {
+    try {
+        const key = `__storage__test`;
+        storage.setItem(key, '');
+        storage.removeItem(key);
+        return true;
+    } catch (e) {
+        return false;
+    }
+};
