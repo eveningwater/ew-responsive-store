@@ -7,13 +7,14 @@
   "typings": "./typings/core/core.d.ts",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build && npm run tsc",
+    "build": "vite build && npm run tsc",
     "preview": "vite preview",
     "test": "vitest",
     "tsc": "tsc",
     "release": "npm publish --access public"
   },
   "devDependencies": {
+    "ew-responsive-store": "0.0.1-beta.4",
     "typescript": "~5.6.2",
     "vite": "^6.0.5",
     "vitest": "^2.1.8"

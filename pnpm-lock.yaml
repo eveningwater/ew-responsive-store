@@ -13,6 +13,9 @@ dependencies:
     version: 3.5.13
 
 devDependencies:
+  ew-responsive-store:
+    specifier: 0.0.1-beta.4
+    version: 0.0.1-beta.4
   typescript:
     specifier: ~5.6.2
     version: 5.6.3
@@ -683,11 +686,9 @@ packages:
     resolution: {integrity: sha512-NaCwtw8o48B9I6L1zl2p41OHo/2Z4wqYGGIK1Khu5T7yxrn+ATOixn/Udn2m+6kZKB/J7cuT9DbWWhRxqixACg==}
     dependencies:
       '@vue/shared': 3.5.13
-    dev: false
 
   /@vue/shared@3.5.13:
     resolution: {integrity: sha512-/hnE/qP5ZoGpol0a5mDi45bOd7t3tjYJBjsgCsivow7D48cJeV5l05RD82lPqi7gRiphZM37rnhW1l6ZoCNNnQ==}
-    dev: false
 
   /assertion-error@2.0.1:
     resolution: {integrity: sha512-Izi8RQcffqCeNVgFigKli1ssklIbpHnCYc6AknXGYoB6grJqyeby7jv12JUQgmTAnIDnbck1uxksT4dzN3PWBA==}
@@ -803,6 +804,13 @@ packages:
     resolution: {integrity: sha512-7RUKfXgSMMkzt6ZuXmqapOurLGPPfgj6l9uRZ7lRGolvk0y2yocc35LdcxKC5PQZdn2DMqioAQ2NoWcrTKmm6g==}
     dependencies:
       '@types/estree': 1.0.6
+    dev: true
+
+  /ew-responsive-store@0.0.1-beta.4:
+    resolution: {integrity: sha512-fvSoJycUqzsqnDbs0myq07SkIZ9a04guXxHvJbE7O2Fhsrc5akar4C/vQ3WvorVtdJnwSkTWxxXPgq5ujc8/Xw==}
+    dependencies:
+      '@vue/reactivity': 3.5.13
+      '@vue/shared': 3.5.13
     dev: true
 
   /expect-type@1.1.0:
