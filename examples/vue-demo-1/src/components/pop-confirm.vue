@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <Fragment>
     <div ref="triggerButton" @click="toggleConfirm">
       <slot></slot>
     </div>
@@ -13,11 +13,11 @@
         </div>
       </div>
     </div>
-  </div>
+  </Fragment>
 </template>
 
 <script setup lang="ts">
-import { ref, defineProps, onMounted, watch, onBeforeUnmount } from 'vue'
+import { ref, defineProps, onMounted, watch, onBeforeUnmount, Fragment } from 'vue'
 
 const emit = defineEmits(['confirm']);
 const props = defineProps({

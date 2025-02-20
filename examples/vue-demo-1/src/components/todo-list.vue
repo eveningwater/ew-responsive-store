@@ -7,6 +7,24 @@ import { computed, ref } from 'vue';
 const todos = useStorage<{ id?: number; text?: string; completed?: boolean }[]>('todos', []);
 const input = ref('');
 const filter = ref('all');
+const filterOptions = ref([
+  {
+    label: '所有',
+    value: 'all',
+    count: () => todos.value.length
+  },
+  {
+    label: '可选',
+    value: 'active',
+    count: () => todos.value.filter(t => !t.completed).length
+
+  },
+  {
+    label: '已完成',
+    value: 'completed',
+    count: () => todos.value.filter(t => t.completed).length
+  }
+])
 
 const addTodo = (e: Event) => {
   e.preventDefault();
@@ -43,14 +61,9 @@ const filteredTodos = computed(() => todos.value.filter(todo => {
     </form>
 
     <div class="filter-buttons">
-      <button type="button" @click="filter = 'all'" :class="{ 'button': true, 'active': filter === 'all' }">
-        所有 ({{ todos.length }})
-      </button>
-      <button type="button" @click="filter = 'active'" :class="{ button: true, 'active': filter === 'active' }">
-        可选 ({{ todos.filter(t => !t.completed).length }})
-      </button>
-      <button type="button" @click="filter = 'completed'" :class="{ button: true, 'active': filter === 'completed' }">
-        已完成 ({{ todos.filter(t => t.completed).length }})
+      <button type="button" v-for="(option, index) in filterOptions" :key="index" @click="filter = option.value"
+        :class="{ button: true, 'active': filter === option.value }">
+        {{ option.label }} ({{ option.count }})
       </button>
     </div>
 
