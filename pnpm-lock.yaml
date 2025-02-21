@@ -14,8 +14,8 @@ dependencies:
 
 devDependencies:
   ew-responsive-store:
-    specifier: 0.0.1-beta.4
-    version: 0.0.1-beta.4
+    specifier: 0.0.2
+    version: 0.0.2
   typescript:
     specifier: ~5.6.2
     version: 5.6.3
@@ -806,8 +806,8 @@ packages:
       '@types/estree': 1.0.6
     dev: true
 
-  /ew-responsive-store@0.0.1-beta.4:
-    resolution: {integrity: sha512-fvSoJycUqzsqnDbs0myq07SkIZ9a04guXxHvJbE7O2Fhsrc5akar4C/vQ3WvorVtdJnwSkTWxxXPgq5ujc8/Xw==}
+  /ew-responsive-store@0.0.2:
+    resolution: {integrity: sha512-SEe2NPQfsBvjXTZ0d7incGselYFMQ1Sc/nNN4IzlymIrQor4u7XrrMgCLkcJsEijRzoRdbf/afuyiLSZtcMcdw==}
     dependencies:
       '@vue/reactivity': 3.5.13
       '@vue/shared': 3.5.13
