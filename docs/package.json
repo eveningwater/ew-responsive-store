@@ -1,0 +1,14 @@
+{
+  "name": "ew-responsive-store-docs",
+  "version": "0.0.",
+  "scripts": {
+    "docs:dev": "rspress dev docs",
+    "docs:build": "rspress build docs",
+    "docs:preview": "rspress preview docs",
+    "release": "npm run docs:build && gh-pages -d ew-responsive-store"
+  },
+  "dependencies": {
+    "gh-pages": "^6.3.0",
+    "rspress": "1.43.13"
+  }
+}

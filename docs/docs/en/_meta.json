@@ -1,0 +1,25 @@
+[
+  {
+    "text": "Guide",
+    "link": "/en/guide/",
+    "activeMatch": "/en/guide/"
+  },
+  {
+    "text": "API",
+    "link": "/en/api/",
+    "activeMatch": "/en/api/"
+  },
+  {
+    "text": "Examples",
+    "items": [
+      {
+        "text": "vue example",
+        "link": "https://github.com/eveningwater/ew-responsive-store/tree/master/examples/vue-demo-1"
+      },
+      {
+        "text": "react example",
+        "link": "https://github.com/eveningwater/ew-responsive-store/tree/master/examples/react-demo-1"
+      }
+    ]
+  }
+]

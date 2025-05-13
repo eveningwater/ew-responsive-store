@@ -11,7 +11,8 @@
     "preview": "vite preview",
     "test": "vitest",
     "tsc": "tsc",
-    "release": "npm publish --access public"
+    "release": "npm publish --access public",
+    "release:docs": "cd docs && npm run release"
   },
   "devDependencies": {
     "ew-responsive-store": "0.0.2",

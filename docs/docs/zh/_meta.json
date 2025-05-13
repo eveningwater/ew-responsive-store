@@ -1,0 +1,25 @@
+[
+  {
+    "text": "指南",
+    "link": "/zh/guide/",
+    "activeMatch": "/zh/guide/"
+  },
+  {
+    "text": "API",
+    "link": "/zh/api/",
+    "activeMatch": "/zh/api/"
+  },
+  {
+    "text": "示例",
+    "items": [
+      {
+        "text": "vue示例",
+        "link": "https://github.com/eveningwater/ew-responsive-store/tree/master/examples/vue-demo-1"
+      },
+      {
+        "text": "react示例",
+        "link": "https://github.com/eveningwater/ew-responsive-store/tree/master/examples/react-demo-1"
+      }
+    ]
+  }
+]
