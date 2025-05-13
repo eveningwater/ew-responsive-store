@@ -1,0 +1,11 @@
+node_modules/*
+.gitignore
+vite.config.ts
+tests/*
+public/*
+pnpm-lock.yaml
+index.html
+vitest.config.ts
+vite.config.ts
+src/*
+tsconfig.json
