@@ -1,13 +1,13 @@
 {
   "name": "ew-responsive-store",
-  "version": "0.0.1-beta.4",
+  "version": "0.0.1-beta.7",
   "type": "module",
   "main": "dist/index.umd.min.js",
   "module": "dist/index.es.min.js",
-  "typings": "./typings/core/core.d.ts",
+  "typings": "./dist/index.d.ts",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && npm run tsc",
+    "build": "vite build && npm run tsc && node scripts/merge-declarations.js",
     "preview": "vite preview",
     "test": "vitest",
     "tsc": "tsc",
@@ -15,13 +15,32 @@
     "release:docs": "cd docs && npm run release"
   },
   "devDependencies": {
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/react": "^18.0.0",
+    "@vitejs/plugin-react": "^5.0.2",
+    "@vue/reactivity": "^3.5.13",
+    "@vue/shared": "^3.5.13",
     "ew-responsive-store": "0.0.2",
+    "jsdom": "^26.1.0",
     "typescript": "~5.6.2",
-    "vite": "^6.0.5",
+    "vite": "^5.4.19",
     "vitest": "^2.1.8"
   },
-  "dependencies": {
-    "@vue/reactivity": "^3.5.13",
-    "@vue/shared": "^3.5.13"
+  "peerDependencies": {
+    "react": ">=16.8.0",
+    "@vue/reactivity": "^3.0.0",
+    "@vue/shared": "^3.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "@vue/reactivity": {
+      "optional": true
+    },
+    "@vue/shared": {
+      "optional": true
+    }
   }
 }

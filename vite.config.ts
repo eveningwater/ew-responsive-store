@@ -4,12 +4,12 @@ import { defineConfig } from "vite";
 export default defineConfig({
   build: {
     lib: {
-      entry: "src/core/core",
+      entry: "src/index.ts",
       name: "ew-responsive-data-store",
       fileName: (format) => `index.${format}.min.js`,
     },
     rollupOptions: {
-      external: ['@vue/reactivity']
+      external: ['@vue/reactivity', 'react','@vue/shared']
     }
   }
 });

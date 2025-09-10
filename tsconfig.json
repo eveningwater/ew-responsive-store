@@ -9,11 +9,11 @@
 
     /* Bundler mode */
     "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
     "isolatedModules": true,
     "moduleDetection": "force",
     "declaration": true,
-    "declarationDir": "./typings",
+    "declarationDir": "./dist",
+    "declarationMap": false,
     "emitDeclarationOnly": true,
 
     /* Linting */
@@ -25,5 +25,5 @@
       "@vue/*": ["node_modules/@vue/*"]
     }
   },
-  "include": ["src"]
+  "include": ["src/core"]
 }
