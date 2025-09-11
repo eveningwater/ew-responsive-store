@@ -18,8 +18,8 @@ importers:
         specifier: ^5.24.1
         version: 5.27.3(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       ew-responsive-store:
-        specifier: ^0.0.1-beta.7
-        version: 0.0.1-beta.7(react@19.1.1)
+        specifier: ^0.0.1-beta.9
+        version: 0.0.1-beta.9(react@19.1.1)
       framer-motion:
         specifier: ^12.4.4
         version: 12.23.12(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
@@ -859,8 +859,8 @@ packages:
     resolution: {integrity: sha512-kVscqXk4OCp68SZ0dkgEKVi6/8ij300KBWTJq32P/dYeWTSwK41WyTxalN1eRmA5Z9UU/LX9D7FWSmV9SAYx6g==}
     engines: {node: '>=0.10.0'}
 
-  ew-responsive-store@0.0.1-beta.7:
-    resolution: {integrity: sha512-SBIueXKleIf+viuUxqFi2uAWOQs1Em+Fnr6s8Rww5g9sXTrCjvZar3AIWF4Rcr+dbu6WUSQjkLe9mjPoVof/iw==}
+  ew-responsive-store@0.0.1-beta.9:
+    resolution: {integrity: sha512-lxQhDk75b+q9pVkzd2QZLrj3WhLA7cHq4j5Zyni7bjm5Ztypw5ECHyZ8L98/bfyd9fhjAiTgT4JIx/PjDeE0yA==}
     peerDependencies:
       '@vue/reactivity': ^3.0.0
       '@vue/shared': ^3.0.0
@@ -2397,7 +2397,7 @@ snapshots:
 
   esutils@2.0.3: {}
 
-  ew-responsive-store@0.0.1-beta.7(react@19.1.1):
+  ew-responsive-store@0.0.1-beta.9(react@19.1.1):
     optionalDependencies:
       react: 19.1.1
 
