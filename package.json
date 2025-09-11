@@ -1,10 +1,23 @@
 {
   "name": "ew-responsive-store",
-  "version": "0.0.1-beta.8",
+  "version": "0.0.1-beta.9",
   "type": "module",
   "main": "dist/index.umd.min.js",
   "module": "dist/index.es.min.js",
   "typings": "./dist/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eveningwater/ew-responsive-store.git"
+  },
+  "keywords": [
+    "ew-responsive-store"
+  ],
+  "author": "eveningwater",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/eveningwater/ew-responsive-store/issues"
+  },
+  "homepage": "https://eveningwater.github.io/ew-responsive-store/",
   "scripts": {
     "dev": "vite",
     "build": "vite build && npm run tsc && node scripts/merge-declarations.js",

@@ -4,15 +4,13 @@ import { isStorageEnabled, isValidJSON, parseStr } from '../core/utils';
 
 export interface ReactStoreOptions {
   storage?: StoreType;
-  immediate?: boolean;
 }
 
 export function useReactStorage<T>(
   key: string,
   initialValue: T,
   options: ReactStoreOptions = {
-    storage: StoreType.LOCAL,
-    immediate: true
+    storage: StoreType.LOCAL
   }
 ) {
   const { storage = StoreType.LOCAL } = options;

@@ -33,7 +33,6 @@ The `options` parameter accepts the following properties:
 | Property    | Type        | Default           | Description                                                  |
 | ----------- | ----------- | ----------------- | ------------------------------------------------------------ |
 | `storage`   | `StoreType` | `StoreType.LOCAL` | The storage type to use (`localStorage` or `sessionStorage`) |
-| `immediate` | `boolean`   | `true`            | Whether to trigger the effect immediately                    |
 | `deep`      | `boolean`   | `true`            | Whether to deeply watch the state for changes                |
 
 Additionally, all Vue watch options are supported, as `StoreOptions` extends `WatchOptions` from Vue.
@@ -81,7 +80,6 @@ function useReactStorage<T>(
   initialValue: T,
   options: ReactStoreOptions = {
     storage: StoreType.LOCAL,
-    immediate: true,
   }
 ): readonly [T, (newValue: T) => void];
 ```
@@ -101,7 +99,6 @@ The `options` parameter accepts the following properties:
 | Property    | Type        | Default           | Description                                                  |
 | ----------- | ----------- | ----------------- | ------------------------------------------------------------ |
 | `storage`   | `StoreType` | `StoreType.LOCAL` | The storage type to use (`localStorage` or `sessionStorage`) |
-| `immediate` | `boolean`   | `true`            | Whether to trigger the effect immediately                    |
 
 ### Returns
 

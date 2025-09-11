@@ -4,6 +4,12 @@
 
 If your project requires using session storage (either `localStorage` or `sessionStorage`) to persist data, and you want the data to be retained after a page refresh while also automatically updating the view when the data changes, I highly recommend using the `ew-responsive-store` library. It's under 1 KB in size and extremely easy to use. With just a single function call, you can make session storage data reactive, which can be applied to any framework-based project, even native JavaScript projects. The library also includes comprehensive unit tests and type inference.
 
+## ✨ New in v0.0.1-beta.8
+
+- **React Support**: Added `useReactStorage` hook for React applications
+- **Cross-tab Synchronization**: Automatic data sync across browser tabs
+- **TypeScript Support**: Full type definitions for both Vue and React
+
 ## Installation
 
 First, you need to install the `ew-responsive-store` package. You can install it using the following command:
@@ -18,9 +24,9 @@ yarn add ew-responsive-store
 
 ## Usage
 
-### 1. Basic Usage
+### 1. Vue.js Usage
 
-The core of the `ew-responsive-store` package exports two methods: `parseStr` and `useStorage`. The `useStorage` method is used to make session storage data reactive.
+The core of the `ew-responsive-store` package exports `useStorage` for Vue.js applications. The `useStorage` method is used to make session storage data reactive.
 
 #### Basic Values
 
@@ -180,6 +186,141 @@ const testEvalData = parseStr('console.log("hello, eveningwater")', parseStrType
 // The console will log: hello, eveningwater
 ```
 
-### 4. More Configuration and Usage
+### 2. React Usage (v0.0.1-beta.8+)
+
+For React applications, use the `useReactStorage` hook which provides a React-native experience:
+
+#### Basic React Example
+
+```tsx
+import React from 'react';
+import { useReactStorage, StoreType } from 'ew-responsive-store';
+
+function Counter() {
+  const [count, setCount] = useReactStorage('count', 0);
+  const [theme, setTheme] = useReactStorage('theme', 'light');
+
+  return (
+    <div className={`app ${theme}`}>
+      <h2>Counter: {count}</h2>
+      <button onClick={() => setCount(count + 1)}>Increment</button>
+      <button onClick={() => setCount(count - 1)}>Decrement</button>
+      <button onClick={() => setCount(0)}>Reset</button>
+      
+      <h2>Theme: {theme}</h2>
+      <button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
+        Toggle Theme
+      </button>
+    </div>
+  );
+}
+
+export default Counter;
+```
+
+#### Todo List with React
+
+```tsx
+import React, { useState } from 'react';
+import { useReactStorage } from 'ew-responsive-store';
+
+interface Todo {
+  id: number;
+  text: string;
+  completed: boolean;
+}
+
+function TodoApp() {
+  const [todos, setTodos] = useReactStorage<Todo[]>('todos', []);
+  const [inputValue, setInputValue] = useState('');
+
+  const addTodo = () => {
+    if (inputValue.trim()) {
+      const newTodo: Todo = {
+        id: Date.now(),
+        text: inputValue,
+        completed: false,
+      };
+      setTodos([...todos, newTodo]);
+      setInputValue('');
+    }
+  };
+
+  const toggleTodo = (id: number) => {
+    setTodos(
+      todos.map(todo =>
+        todo.id === id ? { ...todo, completed: !todo.completed } : todo
+      )
+    );
+  };
+
+  const deleteTodo = (id: number) => {
+    setTodos(todos.filter(todo => todo.id !== id));
+  };
+
+  return (
+    <div>
+      <h1>Todo List</h1>
+      <div>
+        <input
+          type="text"
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyPress={(e) => e.key === 'Enter' && addTodo()}
+          placeholder="Add a new todo..."
+        />
+        <button onClick={addTodo}>Add</button>
+      </div>
+      <ul>
+        {todos.map(todo => (
+          <li key={todo.id}>
+            <input
+              type="checkbox"
+              checked={todo.completed}
+              onChange={() => toggleTodo(todo.id)}
+            />
+            <span style={{
+              textDecoration: todo.completed ? 'line-through' : 'none'
+            }}>
+              {todo.text}
+            </span>
+            <button onClick={() => deleteTodo(todo.id)}>Delete</button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+export default TodoApp;
+```
+
+#### Cross-tab Synchronization
+
+`useReactStorage` automatically synchronizes data across browser tabs:
+
+```tsx
+import React from 'react';
+import { useReactStorage } from 'ew-responsive-store';
+
+function MultiTabCounter() {
+  const [count, setCount] = useReactStorage('sharedCounter', 0);
+
+  return (
+    <div>
+      <h2>Shared Counter</h2>
+      <p>This counter syncs across all browser tabs!</p>
+      <p>Count: {count}</p>
+      <button onClick={() => setCount(count + 1)}>Increment</button>
+      <button onClick={() => setCount(count - 1)}>Decrement</button>
+      <button onClick={() => setCount(0)}>Reset</button>
+    </div>
+  );
+}
+
+export default MultiTabCounter;
+```
+
+### 3. More Configuration and Usage
 
 Since `ew-responsive-store` is built on Vue's reactive system, you can configure it in more advanced ways by passing different parameters for the underlying watch functionality. You can refer to the [Vue Reactivity API documentation](https://cn.vuejs.org/api/reactivity-core.html#watch) to learn more about the parameters and usage.

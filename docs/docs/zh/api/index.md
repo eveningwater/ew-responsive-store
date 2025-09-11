@@ -33,7 +33,6 @@ function useStorage<T>(
 | 属性        | 类型        | 默认值            | 描述                                                   |
 | ----------- | ----------- | ----------------- | ------------------------------------------------------ |
 | `storage`   | `StoreType` | `StoreType.LOCAL` | 要使用的存储类型（`localStorage` 或 `sessionStorage`） |
-| `immediate` | `boolean`   | `true`            | 是否立即触发效果                                       |
 | `deep`      | `boolean`   | `true`            | 是否深度监视状态变化                                   |
 
 此外，所有 Vue 的 watch 选项都受支持，因为 `StoreOptions` 扩展了 Vue 的 `WatchOptions`。
@@ -81,7 +80,6 @@ function useReactStorage<T>(
   initialValue: T,
   options: ReactStoreOptions = {
     storage: StoreType.LOCAL,
-    immediate: true,
   }
 ): readonly [T, (newValue: T) => void];
 ```
@@ -101,7 +99,6 @@ function useReactStorage<T>(
 | 属性        | 类型        | 默认值            | 描述                                                   |
 | ----------- | ----------- | ----------------- | ------------------------------------------------------ |
 | `storage`   | `StoreType` | `StoreType.LOCAL` | 要使用的存储类型（`localStorage` 或 `sessionStorage`） |
-| `immediate` | `boolean`   | `true`            | 是否立即触发效果                                       |
 
 ### 返回值
 
