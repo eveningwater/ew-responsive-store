@@ -1,6 +1,6 @@
 # API Reference
 
-## useStorage
+## useStorage (Vue)
 
 The `useStorage` function is the core API of the `ew-responsive-store` library. It allows you to create reactive state that is synchronized with browser storage (localStorage or sessionStorage).
 
@@ -67,6 +67,145 @@ const settings = useStorage(
   { theme: "dark" },
   { immediate: false }
 );
+```
+
+## useReactStorage (React)--(0.0.1-beta.7)
+
+The `useReactStorage` function is designed specifically for React applications. It provides a React-native way to manage state that is synchronized with browser storage.
+
+### Type Definition
+
+```ts
+function useReactStorage<T>(
+  key: string,
+  initialValue: T,
+  options: ReactStoreOptions = {
+    storage: StoreType.LOCAL,
+    immediate: true,
+  }
+): readonly [T, (newValue: T) => void];
+```
+
+### Parameters
+
+| Parameter      | Type               | Description                                              |
+| -------------- | ------------------ | -------------------------------------------------------- |
+| `key`          | `string`           | The key to use for storing the value in storage          |
+| `initialValue` | `T`                | The initial value to use if no value is found in storage |
+| `options`      | `ReactStoreOptions`| Configuration options (optional)                         |
+
+### Options
+
+The `options` parameter accepts the following properties:
+
+| Property    | Type        | Default           | Description                                                  |
+| ----------- | ----------- | ----------------- | ------------------------------------------------------------ |
+| `storage`   | `StoreType` | `StoreType.LOCAL` | The storage type to use (`localStorage` or `sessionStorage`) |
+| `immediate` | `boolean`   | `true`            | Whether to trigger the effect immediately                    |
+
+### Returns
+
+A tuple containing:
+- `[0]`: The current value of type `T`
+- `[1]`: A setter function to update the value
+
+### Example
+
+```tsx
+import React from 'react';
+import { useReactStorage, StoreType } from "ew-responsive-store";
+
+function Counter() {
+  // Basic usage with localStorage
+  const [count, setCount] = useReactStorage("count", 0);
+  
+  // Using sessionStorage
+  const [user, setUser] = useReactStorage(
+    "user",
+    { name: "John", age: 25 },
+    { storage: StoreType.SESSION }
+  );
+
+  // Complex data types
+  const [todos, setTodos] = useReactStorage("todos", [
+    { id: 1, text: "Learn React", completed: false },
+    { id: 2, text: "Learn TypeScript", completed: true }
+  ]);
+
+  const increment = () => setCount(count + 1);
+  const addTodo = (text: string) => {
+    setTodos([...todos, { 
+      id: Date.now(), 
+      text, 
+      completed: false 
+    }]);
+  };
+
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <button onClick={increment}>Increment</button>
+      
+      <p>User: {user.name} ({user.age})</p>
+      <button onClick={() => setUser({ ...user, age: user.age + 1 })}>
+        Increase Age
+      </button>
+      
+      <div>
+        <h3>Todos:</h3>
+        {todos.map(todo => (
+          <div key={todo.id}>
+            <span style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}>
+              {todo.text}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+### Cross-tab Synchronization
+
+`useReactStorage` automatically synchronizes data across browser tabs using the `storage` event:
+
+```tsx
+import { useReactStorage } from "ew-responsive-store";
+
+function App() {
+  const [theme, setTheme] = useReactStorage("theme", "light");
+  
+  // This will automatically update in other tabs when changed
+  const toggleTheme = () => {
+    setTheme(theme === "light" ? "dark" : "light");
+  };
+
+  return (
+    <div className={`app ${theme}`}>
+      <button onClick={toggleTheme}>
+        Switch to {theme === "light" ? "dark" : "light"} theme
+      </button>
+    </div>
+  );
+}
+```
+
+### Error Handling
+
+The hook will throw an error if storage is not available:
+
+```tsx
+import { useReactStorage } from "ew-responsive-store";
+
+function SafeStorage() {
+  try {
+    const [data, setData] = useReactStorage("data", {});
+    return <div>Storage is available</div>;
+  } catch (error) {
+    return <div>Storage is not available: {error.message}</div>;
+  }
+}
 ```
 
 ## parseStr

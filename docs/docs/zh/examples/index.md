@@ -220,7 +220,170 @@ function reset() {
 
 ## 与 React 一起使用
 
-与 React 组件集成：
+### 使用 useReactStorage 的基本 React 示例
+
+在 React 中使用 `ew-responsive-store` 的推荐方式是通过 `useReactStorage` 钩子：
+
+```jsx
+import React from "react";
+import { useReactStorage, StoreType } from "ew-responsive-store";
+
+function ThemeSwitcher() {
+  const [theme, setTheme] = useReactStorage("theme", "light");
+  const [count, setCount] = useReactStorage("count", 0);
+
+  const toggleTheme = () => {
+    setTheme(theme === "light" ? "dark" : "light");
+  };
+
+  const increment = () => setCount(count + 1);
+  const decrement = () => setCount(count - 1);
+  const reset = () => setCount(0);
+
+  return (
+    <div className={`app ${theme}`}>
+      <h2>主题切换器</h2>
+      <button onClick={toggleTheme}>切换主题</button>
+      <p>当前主题: {theme}</p>
+      
+      <h2>计数器</h2>
+      <div>
+        <button onClick={decrement}>-</button>
+        <span>{count}</span>
+        <button onClick={increment}>+</button>
+        <button onClick={reset}>重置</button>
+      </div>
+    </div>
+  );
+}
+
+export default ThemeSwitcher;
+```
+
+### React 待办事项列表
+
+使用 `useReactStorage` 的完整待办事项列表示例：
+
+```jsx
+import React, { useState } from "react";
+import { useReactStorage, StoreType } from "ew-responsive-store";
+
+interface Todo {
+  id: number;
+  text: string;
+  completed: boolean;
+}
+
+function TodoApp() {
+  const [todos, setTodos] = useReactStorage<Todo[]>("todos", []);
+  const [inputValue, setInputValue] = useState("");
+
+  const addTodo = () => {
+    if (inputValue.trim()) {
+      const newTodo: Todo = {
+        id: Date.now(),
+        text: inputValue,
+        completed: false,
+      };
+      setTodos([...todos, newTodo]);
+      setInputValue("");
+    }
+  };
+
+  const toggleTodo = (id: number) => {
+    setTodos(
+      todos.map((todo) =>
+        todo.id === id ? { ...todo, completed: !todo.completed } : todo
+      )
+    );
+  };
+
+  const deleteTodo = (id: number) => {
+    setTodos(todos.filter((todo) => todo.id !== id));
+  };
+
+  const clearCompleted = () => {
+    setTodos(todos.filter((todo) => !todo.completed));
+  };
+
+  return (
+    <div>
+      <h1>待办事项列表</h1>
+      
+      <div>
+        <input
+          type="text"
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyPress={(e) => e.key === "Enter" && addTodo()}
+          placeholder="添加新的待办事项..."
+        />
+        <button onClick={addTodo}>添加</button>
+      </div>
+
+      <div>
+        <button onClick={clearCompleted}>清除已完成</button>
+        <p>
+          {todos.filter((t) => !t.completed).length} 个待完成，{" "}
+          {todos.filter((t) => t.completed).length} 个已完成
+        </p>
+      </div>
+
+      <ul>
+        {todos.map((todo) => (
+          <li key={todo.id}>
+            <input
+              type="checkbox"
+              checked={todo.completed}
+              onChange={() => toggleTodo(todo.id)}
+            />
+            <span
+              style={{
+                textDecoration: todo.completed ? "line-through" : "none",
+              }}
+            >
+              {todo.text}
+            </span>
+            <button onClick={() => deleteTodo(todo.id)}>删除</button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+export default TodoApp;
+```
+
+### 跨标签页同步
+
+React 组件会自动在不同浏览器标签页之间同步：
+
+```jsx
+import React from "react";
+import { useReactStorage } from "ew-responsive-store";
+
+function MultiTabCounter() {
+  const [count, setCount] = useReactStorage("sharedCounter", 0);
+
+  return (
+    <div>
+      <h2>共享计数器</h2>
+      <p>这个计数器在所有浏览器标签页中同步！</p>
+      <p>计数: {count}</p>
+      <button onClick={() => setCount(count + 1)}>增加</button>
+      <button onClick={() => setCount(count - 1)}>减少</button>
+      <button onClick={() => setCount(0)}>重置</button>
+    </div>
+  );
+}
+
+export default MultiTabCounter;
+```
+
+### 与 Vue 一起使用（传统方式）
+
+如果您需要在 React 中使用 Vue 版本（不推荐），可以这样做：
 
 ```jsx
 import React, { useEffect, useState } from "react";

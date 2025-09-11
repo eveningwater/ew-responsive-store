@@ -9,3 +9,6 @@ vitest.config.ts
 vite.config.ts
 src/*
 tsconfig.json
+docs/*
+examples/*
+scripts/*

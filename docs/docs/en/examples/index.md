@@ -220,7 +220,170 @@ function reset() {
 
 ## Using with React
 
-Integrating with React components:
+### Basic React Example with useReactStorage
+
+The recommended way to use `ew-responsive-store` with React is through the `useReactStorage` hook:
+
+```jsx
+import React from "react";
+import { useReactStorage, StoreType } from "ew-responsive-store";
+
+function ThemeSwitcher() {
+  const [theme, setTheme] = useReactStorage("theme", "light");
+  const [count, setCount] = useReactStorage("count", 0);
+
+  const toggleTheme = () => {
+    setTheme(theme === "light" ? "dark" : "light");
+  };
+
+  const increment = () => setCount(count + 1);
+  const decrement = () => setCount(count - 1);
+  const reset = () => setCount(0);
+
+  return (
+    <div className={`app ${theme}`}>
+      <h2>Theme Switcher</h2>
+      <button onClick={toggleTheme}>Toggle Theme</button>
+      <p>Current theme: {theme}</p>
+      
+      <h2>Counter</h2>
+      <div>
+        <button onClick={decrement}>-</button>
+        <span>{count}</span>
+        <button onClick={increment}>+</button>
+        <button onClick={reset}>Reset</button>
+      </div>
+    </div>
+  );
+}
+
+export default ThemeSwitcher;
+```
+
+### Todo List with React
+
+A complete todo list example using `useReactStorage`:
+
+```jsx
+import React, { useState } from "react";
+import { useReactStorage, StoreType } from "ew-responsive-store";
+
+interface Todo {
+  id: number;
+  text: string;
+  completed: boolean;
+}
+
+function TodoApp() {
+  const [todos, setTodos] = useReactStorage<Todo[]>("todos", []);
+  const [inputValue, setInputValue] = useState("");
+
+  const addTodo = () => {
+    if (inputValue.trim()) {
+      const newTodo: Todo = {
+        id: Date.now(),
+        text: inputValue,
+        completed: false,
+      };
+      setTodos([...todos, newTodo]);
+      setInputValue("");
+    }
+  };
+
+  const toggleTodo = (id: number) => {
+    setTodos(
+      todos.map((todo) =>
+        todo.id === id ? { ...todo, completed: !todo.completed } : todo
+      )
+    );
+  };
+
+  const deleteTodo = (id: number) => {
+    setTodos(todos.filter((todo) => todo.id !== id));
+  };
+
+  const clearCompleted = () => {
+    setTodos(todos.filter((todo) => !todo.completed));
+  };
+
+  return (
+    <div>
+      <h1>Todo List</h1>
+      
+      <div>
+        <input
+          type="text"
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyPress={(e) => e.key === "Enter" && addTodo()}
+          placeholder="Add a new todo..."
+        />
+        <button onClick={addTodo}>Add</button>
+      </div>
+
+      <div>
+        <button onClick={clearCompleted}>Clear Completed</button>
+        <p>
+          {todos.filter((t) => !t.completed).length} remaining,{" "}
+          {todos.filter((t) => t.completed).length} completed
+        </p>
+      </div>
+
+      <ul>
+        {todos.map((todo) => (
+          <li key={todo.id}>
+            <input
+              type="checkbox"
+              checked={todo.completed}
+              onChange={() => toggleTodo(todo.id)}
+            />
+            <span
+              style={{
+                textDecoration: todo.completed ? "line-through" : "none",
+              }}
+            >
+              {todo.text}
+            </span>
+            <button onClick={() => deleteTodo(todo.id)}>Delete</button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+export default TodoApp;
+```
+
+### Cross-tab Synchronization
+
+React components automatically sync across browser tabs:
+
+```jsx
+import React from "react";
+import { useReactStorage } from "ew-responsive-store";
+
+function MultiTabCounter() {
+  const [count, setCount] = useReactStorage("sharedCounter", 0);
+
+  return (
+    <div>
+      <h2>Shared Counter</h2>
+      <p>This counter syncs across all browser tabs!</p>
+      <p>Count: {count}</p>
+      <button onClick={() => setCount(count + 1)}>Increment</button>
+      <button onClick={() => setCount(count - 1)}>Decrement</button>
+      <button onClick={() => setCount(0)}>Reset</button>
+    </div>
+  );
+}
+
+export default MultiTabCounter;
+```
+
+### Using with Vue (Legacy)
+
+If you need to use the Vue version in React (not recommended), you can do it like this:
 
 ```jsx
 import React, { useEffect, useState } from "react";
