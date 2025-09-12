@@ -140,8 +140,8 @@ count.value++;  // count 值变为 1
 默认情况下，`useStorage` 使用 `localStorage`，即永久会话存储。如果你想使用 `sessionStorage`，可以在第三个参数中指定 `storage` 配置项：
 
 ```ts
-import { useStorage } from 'ew-responsive-store';
-import { StoreType } from 'ew-responsive-store/typings/core/enum';
+// (v0.0.1-beta.8+)
+import { useStorage, StoreType } from 'ew-responsive-store';
 
 const count = useStorage('count', 0, { deep: false, storage: StoreType.SESSION });
 
@@ -154,8 +154,8 @@ count.value++;  // count 值变为 1，并且数据保存在 sessionStorage 中
 默认情况下，`useStorage` 会监听到初始值的变化。如果你不希望监听初始值的变动，可以通过传递 `immediate` 参数来控制：
 
 ```ts
-import { useStorage } from 'ew-responsive-store';
-import { StoreType } from 'ew-responsive-store/typings/core/enum';
+// (v0.0.1-beta.8+)
+import { useStorage, StoreType } from 'ew-responsive-store';
 
 // 初始化值变动时不立即被监听
 const count = useStorage('count', 0, { deep: false, immediate: false });
@@ -174,8 +174,8 @@ count.value++;  // count 值变为 1
 #### 示例代码：
 
 ```ts
-import { parseStr } from 'ew-responsive-store';
-import { parseStrType } from 'ew-responsive-store/typings/core/enum';
+// (v0.0.1-beta.8+)
+import { parseStr, parseStrType } from 'ew-responsive-store';
 
 // 解析 JSON 字符串
 const testJSONData = parseStr('{"name":"eveningwater"}'); 
@@ -189,6 +189,21 @@ const testEvalData = parseStr('console.log("hello, eveningwater")', parseStrType
 ### 2. React 使用 (v0.0.1-beta.8+)
 
 对于 React 应用，使用 `useReactStorage` 钩子，它提供了 React 原生的使用体验：
+
+> **注意**：虽然 `useStorage` 技术上可以在 React 中使用，但需要额外的 `useForceUpdate` 钩子来触发重新渲染：
+>
+> ```tsx
+> import { useReducer } from "react";
+> 
+> function useForceUpdate() {
+>   const [, dispatch] = useReducer(() => Object.create(null), {});
+>   return dispatch;
+> }
+> 
+> export default useForceUpdate;
+> ```
+>
+> **不推荐使用这种方式**，因为它很繁琐且违背了 React 的设计模式。建议使用 `useReactStorage` 来获得更好的 React 开发体验。
 
 #### 基本 React 示例
 
@@ -321,6 +336,6 @@ function MultiTabCounter() {
 export default MultiTabCounter;
 ```
 
-### 3. 更多配置与使用
+### 3. 更多配置与使用 (useStorage)
 
 由于 `ew-responsive-store` 底层是基于 Vue 的响应式系统来实现数据监听的，因此你可以通过提供的配置对象来定制更复杂的数据监听逻辑。具体可以参考 [Vue 响应式 API 文档](https://cn.vuejs.org/api/reactivity-core.html#watch) 来了解更多参数和用法。

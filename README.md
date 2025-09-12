@@ -70,7 +70,7 @@ import { useStorage } from 'ew-responsive-store';
 const userInfo = useStorage('user', { name: 'eveningwater' });
 
 // Modify the userInfo object
-userInfo.value.name = '夕水';  // userInfo's name property becomes '夕水'
+userInfo.value.name = 'waterxi';  // userInfo's name property becomes '夕水'
 ```
 
 **Vue Template Code**:
@@ -78,7 +78,7 @@ userInfo.value.name = '夕水';  // userInfo's name property becomes '夕水'
 ```vue
 <template>
   <p>{{ userInfo.name }}</p>
-  <button @click="userInfo.name = '小张'">Click Me</button>
+  <button @click="userInfo.name = 'xiaozhang'">Click Me</button>
 </template>
 
 <script setup>
@@ -154,8 +154,8 @@ count.value++;  // count value becomes 1, and the data is stored in sessionStora
 By default, `useStorage` listens to changes in the initial value. If you don't want to watch the initial value changes, you can control it by passing the `immediate` parameter:
 
 ```ts
-import { useStorage } from 'ew-responsive-store';
-import { StoreType } from 'ew-responsive-store/typings/core/enum';
+// (v0.0.1-beta.8+)
+import { useStorage, StoreType } from 'ew-responsive-store';
 
 // Don't listen to changes in the initial value
 const count = useStorage('count', 0, { deep: false, immediate: false });
@@ -321,6 +321,22 @@ function MultiTabCounter() {
 export default MultiTabCounter;
 ```
 
-### 3. More Configuration and Usage
+> **Note**: While `useStorage` can technically be used in React, it requires additional `useForceUpdate` hooks to trigger re-renders:
+>
+> ```tsx
+> import { useReducer } from "react";
+> 
+> function useForceUpdate() {
+>   const [, dispatch] = useReducer(() => Object.create(null), {});
+>   return dispatch;
+> }
+> 
+> export default useForceUpdate;
+> ```
+>
+> **This approach is not recommended** because it's cumbersome and goes against React's patterns. Use `useReactStorage` instead for a better React experience.
+
+
+### 3. More Configuration and Usage (useStorage)
 
 Since `ew-responsive-store` is built on Vue's reactive system, you can configure it in more advanced ways by passing different parameters for the underlying watch functionality. You can refer to the [Vue Reactivity API documentation](https://cn.vuejs.org/api/reactivity-core.html#watch) to learn more about the parameters and usage.
