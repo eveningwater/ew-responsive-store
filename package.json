@@ -5,6 +5,48 @@
   "main": "dist/index.umd.min.js",
   "module": "dist/index.es.min.js",
   "typings": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.es.min.js",
+      "require": "./dist/index.umd.min.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./react": {
+      "import": "./dist/react.es.min.js",
+      "require": "./dist/react.umd.min.js",
+      "types": "./dist/react.d.ts"
+    },
+    "./vue": {
+      "import": "./dist/vue.es.min.js",
+      "require": "./dist/vue.umd.min.js",
+      "types": "./dist/vue.d.ts"
+    },
+    "./preact": {
+      "import": "./dist/preact.es.min.js",
+      "require": "./dist/preact.umd.min.js",
+      "types": "./dist/preact.d.ts"
+    },
+    "./solid": {
+      "import": "./dist/solid.es.min.js",
+      "require": "./dist/solid.umd.min.js",
+      "types": "./dist/solid.d.ts"
+    },
+    "./svelte": {
+      "import": "./dist/svelte.es.min.js",
+      "require": "./dist/svelte.umd.min.js",
+      "types": "./dist/svelte.d.ts"
+    },
+    "./angular": {
+      "import": "./dist/angular.es.min.js",
+      "require": "./dist/angular.umd.min.js",
+      "types": "./dist/angular.d.ts"
+    },
+    "./vanilla": {
+      "import": "./dist/vanilla/index.es.min.js",
+      "require": "./dist/vanilla/index.umd.min.js",
+      "types": "./dist/vanilla/index.d.ts"
+    }
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/eveningwater/ew-responsive-store.git"
@@ -20,7 +62,16 @@
   "homepage": "https://eveningwater.github.io/ew-responsive-store/",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && npm run tsc && node scripts/merge-declarations.js",
+    "build": "vite build && npm run tsc",
+    "build:react": "vite build --mode react-only",
+    "build:vue": "vite build --mode vue-only",
+    "build:preact": "vite build --mode preact-only",
+    "build:solid": "vite build --mode solid-only",
+    "build:svelte": "vite build --mode svelte-only",
+    "build:angular": "vite build --mode angular-only",
+    "build:vanilla": "vite build --mode vanilla-only",
+    "build:all": "rm -rf dist && npm run build:react && npm run build:vue && npm run build:preact && npm run build:solid && npm run build:svelte && npm run build:angular && npm run build:vanilla && npm run build && npm run tsc",
+    "build:clean": "rm -rf dist && npm run build:all",
     "preview": "vite preview",
     "test": "vitest",
     "tsc": "tsc",
@@ -36,17 +87,37 @@
     "@vue/shared": "^3.5.13",
     "ew-responsive-store": "0.0.2",
     "jsdom": "^26.1.0",
+    "preact": "^10.0.0",
+    "solid-js": "^1.0.0",
+    "svelte": "^3.0.0",
+    "@angular/core": "^17.0.0",
     "typescript": "~5.6.2",
     "vite": "^5.4.19",
     "vitest": "^2.1.8"
   },
   "peerDependencies": {
     "react": ">=16.8.0",
+    "preact": ">=10.0.0",
+    "solid-js": ">=1.0.0",
+    "svelte": ">=3.0.0",
+    "@angular/core": ">=15.0.0",
     "@vue/reactivity": "^3.0.0",
     "@vue/shared": "^3.0.0"
   },
   "peerDependenciesMeta": {
     "react": {
+      "optional": true
+    },
+    "preact": {
+      "optional": true
+    },
+    "solid-js": {
+      "optional": true
+    },
+    "svelte": {
+      "optional": true
+    },
+    "@angular/core": {
       "optional": true
     },
     "@vue/reactivity": {

@@ -11,11 +11,66 @@ It's under 1 KB in size and extremely easy to use. With just a single function c
 First, you need to install the `ew-responsive-store` package. You can install it using the following command:
 
 ```bash
-npm install ew-responsive-store --save-dev
+npm install ew-responsive-store
 # Or using pnpm
 pnpm add ew-responsive-store
 # Or using yarn
 yarn add ew-responsive-store
+```
+
+### Framework Dependencies
+
+Since v0.0.3, `ew-responsive-store` supports multiple frameworks. You only need to install the framework you're using:
+
+```bash
+# For React
+npm install react
+
+# For Vue
+npm install @vue/reactivity @vue/shared
+
+# For Preact
+npm install preact
+
+# For Solid
+npm install solid-js
+
+# For Svelte
+npm install svelte
+
+# For Angular
+npm install @angular/core
+```
+
+**Note**: Framework dependencies are treated as external, so they won't be bundled with your application, keeping the library size minimal.
+
+## Framework-Specific Imports
+
+Since v0.0.3, you should import from framework-specific entry points:
+
+```ts
+// Vue
+import { useStorage } from 'ew-responsive-store/vue';
+
+// React
+import { useStorage } from 'ew-responsive-store/react';
+
+// Preact
+import { useStorage } from 'ew-responsive-store/preact';
+
+// Solid
+import { useStorage } from 'ew-responsive-store/solid';
+
+// Svelte
+import { useStorage } from 'ew-responsive-store/svelte';
+
+// Angular
+import { useStorage } from 'ew-responsive-store/angular';
+
+// Vanilla JS
+import { useStorage } from 'ew-responsive-store/vanilla';
+// or
+import { useStorage } from 'ew-responsive-store';
 ```
 
 ## Basic Usage
@@ -27,7 +82,7 @@ The core of the `ew-responsive-store` package exports two methods: `parseStr` an
 You can use `useStorage` to create reactive basic values. For example, let's say you have a counter stored in `localStorage`:
 
 ```ts
-import { useStorage } from "ew-responsive-store";
+import { useStorage } from "ew-responsive-store/vue";
 
 // Initialize the count with a default value of 0
 const count = useStorage("count", 0);
@@ -45,7 +100,7 @@ count.value++; // count value becomes 1
 </template>
 
 <script setup>
-import { useStorage } from "ew-responsive-store";
+import { useStorage } from "ew-responsive-store/vue";
 
 const count = useStorage("count", 0);
 </script>
@@ -58,7 +113,7 @@ At this point, the value of `count` is stored in the browser's session storage, 
 You can also store reactive objects in a similar way:
 
 ```ts
-import { useStorage } from "ew-responsive-store";
+import { useStorage } from "ew-responsive-store/vue";
 
 // Initialize the userInfo object
 const userInfo = useStorage("user", { name: "eveningwater" });
@@ -74,7 +129,7 @@ When you change the `name` property of `userInfo`, the view will automatically u
 You can also store arrays, and they will be reactive as well:
 
 ```ts
-import { useStorage } from "ew-responsive-store";
+import { useStorage } from "ew-responsive-store/vue";
 
 // Initialize an array
 const countList = useStorage("countList", [1, 2, 3]);

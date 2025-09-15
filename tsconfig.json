@@ -25,5 +25,5 @@
       "@vue/*": ["node_modules/@vue/*"]
     }
   },
-  "include": ["src/core"]
+  "include": ["src/**/*"]
 }

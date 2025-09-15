@@ -4,7 +4,15 @@
 
 If your project requires using session storage (either `localStorage` or `sessionStorage`) to persist data, and you want the data to be retained after a page refresh while also automatically updating the view when the data changes, I highly recommend using the `ew-responsive-store` library. It's under 1 KB in size and extremely easy to use. With just a single function call, you can make session storage data reactive, which can be applied to any framework-based project, even native JavaScript projects. The library also includes comprehensive unit tests and type inference.
 
-## ✨ New in v0.0.1-beta.8
+## ✨ New in v0.0.3
+
+- **Multi-Framework Support**: Added support for React, Vue, Preact, Solid, Svelte, Angular, and Vanilla JS
+- **Framework-Specific Entry Points**: Each framework has its own optimized entry point (e.g., `ew-responsive-store/react`, `ew-responsive-store/vue`)
+- **Zero External Dependencies**: Framework dependencies are treated as external, reducing bundle size
+- **Improved TypeScript Support**: Enhanced type definitions for all supported frameworks
+- **Better Testing Coverage**: Comprehensive unit tests for all framework adapters
+
+## ✨ Previous Features (v0.0.1-beta.8)
 
 - **React Support**: Added `useReactStorage` hook for React applications
 - **Cross-tab Synchronization**: Automatic data sync across browser tabs
@@ -15,14 +23,69 @@ If your project requires using session storage (either `localStorage` or `sessio
 First, you need to install the `ew-responsive-store` package. You can install it using the following command:
 
 ```bash
-npm install ew-responsive-store --save-dev
+npm install ew-responsive-store
 # Or using pnpm
 pnpm add ew-responsive-store
 # Or using yarn
 yarn add ew-responsive-store
 ```
 
+### Framework Dependencies
+
+Since v0.0.3, `ew-responsive-store` supports multiple frameworks. You only need to install the framework you're using:
+
+```bash
+# For React
+npm install react
+
+# For Vue
+npm install @vue/reactivity @vue/shared
+
+# For Preact
+npm install preact
+
+# For Solid
+npm install solid-js
+
+# For Svelte
+npm install svelte
+
+# For Angular
+npm install @angular/core
+```
+
+**Note**: Framework dependencies are treated as external, so they won't be bundled with your application, keeping the library size minimal.
+
 ## Usage
+
+### Framework-Specific Imports
+
+Since v0.0.3, you should import from framework-specific entry points:
+
+```ts
+// Vue
+import { useStorage } from 'ew-responsive-store/vue';
+
+// React
+import { useStorage } from 'ew-responsive-store/react';
+
+// Preact
+import { useStorage } from 'ew-responsive-store/preact';
+
+// Solid
+import { useStorage } from 'ew-responsive-store/solid';
+
+// Svelte
+import { useStorage } from 'ew-responsive-store/svelte';
+
+// Angular
+import { useStorage } from 'ew-responsive-store/angular';
+
+// Vanilla JS
+import { useStorage } from 'ew-responsive-store/vanilla';
+// or
+import { useStorage } from 'ew-responsive-store';
+```
 
 ### 1. Vue.js Usage
 
@@ -33,7 +96,7 @@ The core of the `ew-responsive-store` package exports `useStorage` for Vue.js ap
 You can use `useStorage` to create reactive basic values. For example, let's say you have a counter stored in `localStorage`:
 
 ```ts
-import { useStorage } from 'ew-responsive-store';
+import { useStorage } from 'ew-responsive-store/vue';
 
 // Initialize the count with a default value of 0
 const count = useStorage('count', 0);
@@ -51,7 +114,7 @@ count.value++;  // count value becomes 1
 </template>
 
 <script setup>
-import { useStorage } from 'ew-responsive-store';
+import { useStorage } from 'ew-responsive-store/vue';
 
 const count = useStorage('count', 0);
 </script>
@@ -64,7 +127,7 @@ At this point, the value of `count` is stored in the browser's session storage, 
 You can also store reactive objects in a similar way:
 
 ```ts
-import { useStorage } from 'ew-responsive-store';
+import { useStorage } from 'ew-responsive-store/vue';
 
 // Initialize the userInfo object
 const userInfo = useStorage('user', { name: 'eveningwater' });
@@ -82,7 +145,7 @@ userInfo.value.name = 'waterxi';  // userInfo's name property becomes '夕水'
 </template>
 
 <script setup>
-import { useStorage } from 'ew-responsive-store';
+import { useStorage } from 'ew-responsive-store/vue';
 
 const userInfo = useStorage('user', { name: 'eveningwater' });
 </script>
@@ -95,7 +158,7 @@ When you change the `name` property of `userInfo`, the view will automatically u
 You can also store arrays, and they will be reactive as well:
 
 ```ts
-import { useStorage } from 'ew-responsive-store';
+import { useStorage } from 'ew-responsive-store/vue';
 
 // Initialize an array
 const countList = useStorage('countList', [1, 2, 3]);
@@ -113,7 +176,7 @@ countList.value.push(4);  // The array becomes [1, 2, 3, 4]
 </template>
 
 <script setup>
-import { useStorage } from 'ew-responsive-store';
+import { useStorage } from 'ew-responsive-store/vue';
 
 const countList = useStorage('countList', [1, 2, 3]);
 </script>
@@ -126,7 +189,7 @@ const countList = useStorage('countList', [1, 2, 3]);
 By default, `useStorage` enables deep watching, which is useful for objects and arrays. If you're dealing with basic types and don't need deep watching, you can disable it by passing a third configuration parameter:
 
 ```ts
-import { useStorage } from 'ew-responsive-store';
+import { useStorage } from 'ew-responsive-store/vue';
 
 // Initialize count with deep watching disabled
 const count = useStorage('count', 0, { deep: false });
@@ -140,8 +203,8 @@ count.value++;  // count value becomes 1
 By default, `useStorage` uses `localStorage` for persistent storage. If you want to use `sessionStorage` instead, you can specify it in the configuration:
 
 ```ts
-import { useStorage } from 'ew-responsive-store';
-import { StoreType } from 'ew-responsive-store/typings/core/enum';
+import { useStorage } from 'ew-responsive-store/vue';
+import { StoreType } from 'ew-responsive-store';
 
 const count = useStorage('count', 0, { deep: false, storage: StoreType.SESSION });
 
@@ -154,8 +217,8 @@ count.value++;  // count value becomes 1, and the data is stored in sessionStora
 By default, `useStorage` listens to changes in the initial value. If you don't want to watch the initial value changes, you can control it by passing the `immediate` parameter:
 
 ```ts
-// (v0.0.1-beta.8+)
-import { useStorage, StoreType } from 'ew-responsive-store';
+// (v0.0.3+)
+import { useStorage, StoreType } from 'ew-responsive-store/vue';
 
 // Don't listen to changes in the initial value
 const count = useStorage('count', 0, { deep: false, immediate: false });
@@ -174,31 +237,30 @@ The `parseStr` method is used to parse string values. It provides two parsing mo
 #### Example Code:
 
 ```ts
-import { parseStr } from 'ew-responsive-store';
-import { parseStrType } from 'ew-responsive-store/typings/core/enum';
+import { parseStr, ParseStrType } from 'ew-responsive-store';
 
 // Parse a JSON string
 const testJSONData = parseStr('{"name":"eveningwater"}'); 
 console.log(testJSONData);  // { name: "eveningwater" }
 
 // Execute JavaScript code from a string
-const testEvalData = parseStr('console.log("hello, eveningwater")', parseStrType.EVAL); 
+const testEvalData = parseStr('console.log("hello, eveningwater")', ParseStrType.EVAL); 
 // The console will log: hello, eveningwater
 ```
 
-### 2. React Usage (v0.0.1-beta.8+)
+### 2. React Usage (v0.0.3+)
 
-For React applications, use the `useReactStorage` hook which provides a React-native experience:
+For React applications, use the `useStorage` hook from the React entry point:
 
 #### Basic React Example
 
 ```tsx
 import React from 'react';
-import { useReactStorage, StoreType } from 'ew-responsive-store';
+import { useStorage, StoreType } from 'ew-responsive-store/react';
 
 function Counter() {
-  const [count, setCount] = useReactStorage('count', 0);
-  const [theme, setTheme] = useReactStorage('theme', 'light');
+  const [count, setCount] = useStorage('count', 0);
+  const [theme, setTheme] = useStorage('theme', 'light');
 
   return (
     <div className={`app ${theme}`}>
@@ -222,7 +284,7 @@ export default Counter;
 
 ```tsx
 import React, { useState } from 'react';
-import { useReactStorage } from 'ew-responsive-store';
+import { useStorage } from 'ew-responsive-store/react';
 
 interface Todo {
   id: number;
@@ -231,7 +293,7 @@ interface Todo {
 }
 
 function TodoApp() {
-  const [todos, setTodos] = useReactStorage<Todo[]>('todos', []);
+  const [todos, setTodos] = useStorage<Todo[]>('todos', []);
   const [inputValue, setInputValue] = useState('');
 
   const addTodo = () => {
@@ -301,10 +363,10 @@ export default TodoApp;
 
 ```tsx
 import React from 'react';
-import { useReactStorage } from 'ew-responsive-store';
+import { useStorage } from 'ew-responsive-store/react';
 
 function MultiTabCounter() {
-  const [count, setCount] = useReactStorage('sharedCounter', 0);
+  const [count, setCount] = useStorage('sharedCounter', 0);
 
   return (
     <div>
@@ -321,22 +383,122 @@ function MultiTabCounter() {
 export default MultiTabCounter;
 ```
 
-> **Note**: While `useStorage` can technically be used in React, it requires additional `useForceUpdate` hooks to trigger re-renders:
->
-> ```tsx
-> import { useReducer } from "react";
-> 
-> function useForceUpdate() {
->   const [, dispatch] = useReducer(() => Object.create(null), {});
->   return dispatch;
-> }
-> 
-> export default useForceUpdate;
-> ```
->
-> **This approach is not recommended** because it's cumbersome and goes against React's patterns. Use `useReactStorage` instead for a better React experience.
+### 3. Other Framework Support (v0.0.3+)
+
+#### Preact Usage
+
+```tsx
+import { useStorage } from 'ew-responsive-store/preact';
+
+function Counter() {
+  const [count, setCount] = useStorage('count', 0);
+  
+  return (
+    <div>
+      <h2>Count: {count}</h2>
+      <button onClick={() => setCount(count + 1)}>Increment</button>
+    </div>
+  );
+}
+```
+
+#### Solid Usage
+
+```tsx
+import { useStorage } from 'ew-responsive-store/solid';
+
+function Counter() {
+  const [count, setCount] = useStorage('count', 0);
+  
+  return (
+    <div>
+      <h2>Count: {count()}</h2>
+      <button onClick={() => setCount(count() + 1)}>Increment</button>
+    </div>
+  );
+}
+```
+
+#### Svelte Usage
+
+```svelte
+<script>
+  import { useStorage } from 'ew-responsive-store/svelte';
+  
+  const store = useStorage('count', 0);
+  let count = $store;
+  
+  function increment() {
+    store.set(count + 1);
+  }
+</script>
+
+<div>
+  <h2>Count: {count}</h2>
+  <button on:click={increment}>Increment</button>
+</div>
+```
+
+#### Angular Usage
+
+```ts
+import { Component } from '@angular/core';
+import { useStorage } from 'ew-responsive-store/angular';
+
+@Component({
+  selector: 'app-counter',
+  template: `
+    <div>
+      <h2>Count: {{ count() }}</h2>
+      <button (click)="increment()">Increment</button>
+    </div>
+  `
+})
+export class CounterComponent {
+  private storage = useStorage('count', 0);
+  count = this.storage.value;
+  
+  increment() {
+    this.storage.setValue(this.count() + 1);
+  }
+}
+```
+
+#### Vanilla JavaScript Usage
+
+```js
+import { useStorage } from 'ew-responsive-store/vanilla';
+
+const storage = useStorage('count', 0);
+
+// Get current value
+console.log(storage.value); // 0
+
+// Update value
+storage.setValue(1);
+console.log(storage.value); // 1
+
+// Subscribe to changes
+storage.subscribe((newValue) => {
+  console.log('Value changed:', newValue);
+});
+
+// Update with function
+storage.updateValue(current => current + 1);
+console.log(storage.value); // 2
+```
 
 
-### 3. More Configuration and Usage (useStorage)
+### 4. More Configuration and Usage
 
-Since `ew-responsive-store` is built on Vue's reactive system, you can configure it in more advanced ways by passing different parameters for the underlying watch functionality. You can refer to the [Vue Reactivity API documentation](https://cn.vuejs.org/api/reactivity-core.html#watch) to learn more about the parameters and usage.
+Since `ew-responsive-store` supports multiple frameworks, each framework has its own optimized implementation:
+
+- **Vue**: Built on Vue's reactive system with `ref`, `watch`, and `onUnmounted`
+- **React**: Uses `useState` and `useEffect` hooks for state management
+- **Preact**: Similar to React but optimized for Preact's smaller bundle size
+- **Solid**: Uses Solid's `createSignal` and `createEffect` for fine-grained reactivity
+- **Svelte**: Integrates with Svelte's store system using `writable`
+- **Angular**: Uses Angular's `signal` and `effect` for reactive state management
+- **Vanilla**: Pure JavaScript implementation with manual subscription management
+
+For advanced configuration, refer to the specific framework's documentation and the library's TypeScript definitions.

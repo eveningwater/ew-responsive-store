@@ -17,12 +17,15 @@ hero:
     alt: ew-responsive-store
 
 features:
+  - title: Multi-Framework Support
+    details: Supports React, Vue, Preact, Solid, Svelte, Angular, and Vanilla JS
+    icon: 🔄
   - title: Lightweight
     details: Less than 1KB in size, no bloat in your project
     icon: 🪶
-  - title: Framework Agnostic
-    details: Works with any JavaScript framework or vanilla JS
-    icon: 🔄
+  - title: Zero External Dependencies
+    details: Framework dependencies are external, reducing bundle size
+    icon: 📦
   - title: Type Safe
     details: Full TypeScript support with type inference
     icon: 🛡️
@@ -32,6 +35,9 @@ features:
   - title: Persistent
     details: Data persists across page refreshes
     icon: 💾
+  - title: Cross-tab Sync
+    details: Automatically syncs data across browser tabs
+    icon: 🔗
   - title: Simple API
     details: Easy to use with a minimal learning curve
     icon: 🔧

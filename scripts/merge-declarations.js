@@ -5,31 +5,37 @@ const distDir = './dist';
 const outputFile = path.join(distDir, 'index.d.ts');
 
 // 读取各个声明文件的内容
-const coreContent = fs.readFileSync(path.join(distDir, 'core.d.ts'), 'utf8');
-const reactStorageContent = fs.readFileSync(path.join(distDir, 'use-react-storage.d.ts'), 'utf8');
-const enumContent = fs.readFileSync(path.join(distDir, 'enum.d.ts'), 'utf8');
-const utilsContent = fs.readFileSync(path.join(distDir, 'utils.d.ts'), 'utf8');
+const coreStorageContent = fs.readFileSync(path.join(distDir, 'core/storage.d.ts'), 'utf8');
+const coreTypesContent = fs.readFileSync(path.join(distDir, 'core/types.d.ts'), 'utf8');
+const coreUtilsContent = fs.readFileSync(path.join(distDir, 'core/utils.d.ts'), 'utf8');
+
+// 读取适配器文件
+const adaptersDir = path.join(distDir, 'adapters');
+const adapterFiles = fs.readdirSync(adaptersDir).filter(file => file.endsWith('.d.ts'));
+const adaptersContent = adapterFiles.map(file => {
+  const content = fs.readFileSync(path.join(adaptersDir, file), 'utf8');
+  return `// ${file.replace('.d.ts', '')} adapter
+${content}`;
+}).join('\n\n');
 
 // 合并内容，移除重复的导入和导出
 const mergedContent = `// 自动生成的合并类型定义文件
 // 请勿手动修改此文件
 
-${enumContent}
+${coreTypesContent}
 
-${utilsContent.replace(/import.*from.*enum.*;?\n?/g, '')}
+${coreUtilsContent.replace(/import.*from.*types.*;?\n?/g, '')}
 
-${coreContent.replace(/import.*from.*enum.*;?\n?/g, '').replace(/import.*from.*utils.*;?\n?/g, '').replace(/export\s*{\s*parseStr,\s*isStorageEnabled,\s*isValidJSON\s*};?\n?/g, '')}
+${coreStorageContent.replace(/import.*from.*types.*;?\n?/g, '').replace(/import.*from.*utils.*;?\n?/g, '')}
 
-${reactStorageContent.replace(/import.*from.*enum.*;?\n?/g, '')}
+${adaptersContent.replace(/import.*from.*\.\.\/core\/types.*;?\n?/g, '').replace(/import.*from.*\.\.\/core\/storage.*;?\n?/g, '')}
 `;
 
 // 写入合并后的文件
 fs.writeFileSync(outputFile, mergedContent);
 
 // 清理单独的声明文件
-fs.unlinkSync(path.join(distDir, 'core.d.ts'));
-fs.unlinkSync(path.join(distDir, 'use-react-storage.d.ts'));
-fs.unlinkSync(path.join(distDir, 'enum.d.ts'));
-fs.unlinkSync(path.join(distDir, 'utils.d.ts'));
+fs.rmSync(path.join(distDir, 'core'), { recursive: true, force: true });
+fs.rmSync(path.join(distDir, 'adapters'), { recursive: true, force: true });
 
 console.log('✅ 声明文件合并完成: dist/index.d.ts');

@@ -11,11 +11,66 @@
 首先，你需要安装 `ew-responsive-store` 包。可以通过以下命令安装：
 
 ```bash
-npm install ew-responsive-store --save-dev
+npm install ew-responsive-store
 # 或者使用 pnpm
 pnpm add ew-responsive-store
 # 或者使用 yarn
 yarn add ew-responsive-store
+```
+
+### 框架依赖
+
+自 v0.0.3 起，`ew-responsive-store` 支持多个框架。你只需要安装你正在使用的框架：
+
+```bash
+# React
+npm install react
+
+# Vue
+npm install @vue/reactivity @vue/shared
+
+# Preact
+npm install preact
+
+# Solid
+npm install solid-js
+
+# Svelte
+npm install svelte
+
+# Angular
+npm install @angular/core
+```
+
+**注意**：框架依赖作为外部依赖处理，因此不会打包到你的应用中，保持库的体积最小。
+
+## 框架专用导入
+
+自 v0.0.3 起，你应该从框架专用入口点导入：
+
+```ts
+// Vue
+import { useStorage } from 'ew-responsive-store/vue';
+
+// React
+import { useStorage } from 'ew-responsive-store/react';
+
+// Preact
+import { useStorage } from 'ew-responsive-store/preact';
+
+// Solid
+import { useStorage } from 'ew-responsive-store/solid';
+
+// Svelte
+import { useStorage } from 'ew-responsive-store/svelte';
+
+// Angular
+import { useStorage } from 'ew-responsive-store/angular';
+
+// 原生 JavaScript
+import { useStorage } from 'ew-responsive-store/vanilla';
+// 或者
+import { useStorage } from 'ew-responsive-store';
 ```
 
 ## 基本使用
@@ -27,7 +82,7 @@ yarn add ew-responsive-store
 你可以使用 `useStorage` 来实现基本值的响应式。例如，假设你有一个计数器，存储在 `localStorage` 中：
 
 ```ts
-import { useStorage } from "ew-responsive-store";
+import { useStorage } from "ew-responsive-store/vue";
 
 // 初始化 count，默认值为 0
 const count = useStorage("count", 0);
@@ -45,7 +100,7 @@ count.value++; // count 值变为 1
 </template>
 
 <script setup>
-import { useStorage } from "ew-responsive-store";
+import { useStorage } from "ew-responsive-store/vue";
 
 const count = useStorage("count", 0);
 </script>
@@ -58,7 +113,7 @@ const count = useStorage("count", 0);
 同样地，你可以将对象存储为响应式数据：
 
 ```ts
-import { useStorage } from "ew-responsive-store";
+import { useStorage } from "ew-responsive-store/vue";
 
 // 初始化 userInfo 对象
 const userInfo = useStorage("user", { name: "eveningwater" });
@@ -74,7 +129,7 @@ userInfo.value.name = "夕水"; // userInfo 的 name 属性变为 '夕水'
 你还可以存储数组，并且它也是响应式的：
 
 ```ts
-import { useStorage } from "ew-responsive-store";
+import { useStorage } from "ew-responsive-store/vue";
 
 // 初始化一个数组
 const countList = useStorage("countList", [1, 2, 3]);

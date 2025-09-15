@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ew-responsive-store 原生JavaScript示例</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 8px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .value-display {
+            background: #f8f9fa;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>ew-responsive-store 原生JavaScript示例</h1>
+    
+    <div class="container">
+        <h2>基础使用</h2>
+        <div id="basic-example">
+            <p>当前值: <span id="basic-value">加载中...</span></p>
+            <button onclick="updateBasicValue()">更新值</button>
+            <button onclick="resetBasicValue()">重置</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>跨标签页同步</h2>
+        <div id="sync-example">
+            <p>当前值: <span id="sync-value">加载中...</span></p>
+            <p>打开新标签页修改此值，当前标签页会自动同步</p>
+            <button onclick="updateSyncValue()">更新值</button>
+            <button onclick="resetSyncValue()">重置</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>订阅模式</h2>
+        <div id="subscribe-example">
+            <p>当前值: <span id="subscribe-value">加载中...</span></p>
+            <p>订阅者数量: <span id="subscriber-count">0</span></p>
+            <button onclick="updateSubscribeValue()">更新值</button>
+            <button onclick="addSubscriber()">添加订阅者</button>
+            <button onclick="removeSubscriber()">移除订阅者</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>全局存储管理器</h2>
+        <div id="global-example">
+            <p>用户数据: <span id="user-data">加载中...</span></p>
+            <p>设置数据: <span id="settings-data">加载中...</span></p>
+            <button onclick="updateUserData()">更新用户数据</button>
+            <button onclick="updateSettingsData()">更新设置数据</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { 
+            useStorage as useVanillaStorage, 
+            globalStorage
+        } from '../dist/index.es.min.js';
+        
+        // 定义StoreType枚举（临时解决方案）
+        const StoreType = {
+            LOCAL: 'localStorage',
+            SESSION: 'sessionStorage'
+        };
+
+        // 基础使用示例
+        const basicStorage = useVanillaStorage('basic-example', { count: 0 });
+        
+        function updateBasicValue() {
+            basicStorage.updateValue(current => ({ count: current.count + 1 }));
+        }
+        
+        function resetBasicValue() {
+            basicStorage.reset();
+        }
+        
+        // 更新显示
+        function updateBasicDisplay() {
+            document.getElementById('basic-value').textContent = 
+                JSON.stringify(basicStorage.value);
+        }
+        
+        basicStorage.subscribe(updateBasicDisplay);
+        updateBasicDisplay();
+
+        // 跨标签页同步示例
+        const syncStorage = useVanillaStorage('sync-example', { message: 'Hello World' });
+        
+        function updateSyncValue() {
+            syncStorage.updateValue(current => ({ 
+                message: current.message + '!' 
+            }));
+        }
+        
+        function resetSyncValue() {
+            syncStorage.reset();
+        }
+        
+        function updateSyncDisplay() {
+            document.getElementById('sync-value').textContent = 
+                JSON.stringify(syncStorage.value);
+        }
+        
+        syncStorage.subscribe(updateSyncDisplay);
+        updateSyncDisplay();
+
+        // 订阅模式示例
+        const subscribeStorage = useVanillaStorage('subscribe-example', { data: 'initial' });
+        let subscriberCount = 0;
+        const subscribers = [];
+        
+        function updateSubscribeValue() {
+            subscribeStorage.updateValue(current => ({ 
+                data: current.data + ' updated' 
+            }));
+        }
+        
+        function addSubscriber() {
+            const subscriber = (value) => {
+                console.log('订阅者收到更新:', value);
+            };
+            subscribeStorage.subscribe(subscriber);
+            subscribers.push(subscriber);
+            subscriberCount++;
+            updateSubscriberDisplay();
+        }
+        
+        function removeSubscriber() {
+            if (subscribers.length > 0) {
+                const subscriber = subscribers.pop();
+                subscribeStorage.subscribe(subscriber)(); // 取消订阅
+                subscriberCount--;
+                updateSubscriberDisplay();
+            }
+        }
+        
+        function updateSubscribeDisplay() {
+            document.getElementById('subscribe-value').textContent = 
+                JSON.stringify(subscribeStorage.value);
+        }
+        
+        function updateSubscriberDisplay() {
+            document.getElementById('subscriber-count').textContent = subscriberCount;
+        }
+        
+        subscribeStorage.subscribe(updateSubscribeDisplay);
+        updateSubscribeDisplay();
+        updateSubscriberDisplay();
+
+        // 全局存储管理器示例
+        const userStorage = globalStorage.getStorage('user-data', { name: 'John', age: 25 });
+        const settingsStorage = globalStorage.getStorage('settings-data', { theme: 'light', lang: 'zh' });
+        
+        function updateUserData() {
+            userStorage.updateValue(current => ({ 
+                ...current, 
+                age: current.age + 1 
+            }));
+        }
+        
+        function updateSettingsData() {
+            settingsStorage.updateValue(current => ({ 
+                ...current, 
+                theme: current.theme === 'light' ? 'dark' : 'light' 
+            }));
+        }
+        
+        function updateUserDisplay() {
+            document.getElementById('user-data').textContent = 
+                JSON.stringify(userStorage.value);
+        }
+        
+        function updateSettingsDisplay() {
+            document.getElementById('settings-data').textContent = 
+                JSON.stringify(settingsStorage.value);
+        }
+        
+        userStorage.subscribe(updateUserDisplay);
+        settingsStorage.subscribe(updateSettingsDisplay);
+        updateUserDisplay();
+        updateSettingsDisplay();
+
+        // 将函数暴露到全局作用域
+        window.updateBasicValue = updateBasicValue;
+        window.resetBasicValue = resetBasicValue;
+        window.updateSyncValue = updateSyncValue;
+        window.resetSyncValue = resetSyncValue;
+        window.updateSubscribeValue = updateSubscribeValue;
+        window.addSubscriber = addSubscriber;
+        window.removeSubscriber = removeSubscriber;
+        window.updateUserData = updateUserData;
+        window.updateSettingsData = updateSettingsData;
+    </script>
+</body>
+</html>

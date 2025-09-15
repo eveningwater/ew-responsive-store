@@ -1,12 +1,12 @@
-import { parseStrType } from "./enum";
+import { ParseStrType } from "./types";
 
 export const parseStr = <T>(
     str: string,
-    type: parseStrType = parseStrType.JSON,
+    type: ParseStrType = ParseStrType.JSON,
 ) => {
     const parseMethod = {
-        [parseStrType.EVAL]: <T>(v: string): T => new Function(`return ${v}`)(),
-        [parseStrType.JSON]: JSON.parse,
+        [ParseStrType.EVAL]: <T>(v: string): T => new Function(`return ${v}`)(),
+        [ParseStrType.JSON]: JSON.parse,
     };
     let res: T | null = null;
     try {
@@ -22,8 +22,8 @@ export const parseStr = <T>(
 
 export const isValidJSON = (val: string) => {
     try {
-        const res = JSON.parse(val);
-        return res !== null;
+        JSON.parse(val);
+        return true;
     } catch (error) {
         return false;
     }

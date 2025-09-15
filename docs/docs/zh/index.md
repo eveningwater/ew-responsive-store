@@ -17,12 +17,15 @@ hero:
     alt: ew-responsive-store
 
 features:
+  - title: 多框架支持
+    details: 支持React、Vue、Preact、Solid、Svelte、Angular和原生JS
+    icon: 🔄
   - title: 轻量级
     details: 体积不到1KB，不会给项目增加负担
     icon: 🪶
-  - title: 框架无关
-    details: 适用于任何JavaScript框架或原生JS
-    icon: 🔄
+  - title: 零外部依赖
+    details: 框架依赖作为外部依赖处理，减少打包体积
+    icon: 📦
   - title: 类型安全
     details: 完整的TypeScript支持和类型推导
     icon: 🛡️
@@ -32,6 +35,9 @@ features:
   - title: 持久化
     details: 数据在页面刷新后依然保留
     icon: 💾
+  - title: 跨标签页同步
+    details: 自动在不同浏览器标签页间同步数据
+    icon: 🔗
   - title: 简单API
     details: 易于使用，学习曲线平缓
     icon: 🔧
