@@ -11,6 +11,7 @@ export enum ParseStrType {
 // 基础存储选项
 export interface BaseStoreOptions {
   storage?: StoreType;
+  [key: string]: any;
 }
 
 // Vue存储选项

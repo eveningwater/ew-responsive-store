@@ -1,6 +1,6 @@
 {
   "name": "ew-responsive-store",
-  "version": "0.0.3-beta.1",
+  "version": "0.0.3-beta.2",
   "type": "module",
   "main": "dist/index.umd.min.js",
   "module": "dist/index.es.min.js",
