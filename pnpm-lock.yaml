@@ -12,6 +12,9 @@ importers:
         specifier: '>=16.8.0'
         version: 19.1.1
     devDependencies:
+      '@angular/core':
+        specifier: ^17.0.0
+        version: 17.3.12(rxjs@7.8.2)(zone.js@0.14.10)
       '@testing-library/react':
         specifier: ^16.3.0
         version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@18.3.24)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
@@ -31,8 +34,8 @@ importers:
         specifier: ^3.5.13
         version: 3.5.13
       ew-responsive-store:
-        specifier: 0.0.2
-        version: 0.0.2
+        specifier: 0.0.3-beta.2
+        version: 0.0.3-beta.2(@angular/core@17.3.12(rxjs@7.8.2)(zone.js@0.14.10))(@vue/reactivity@3.5.13)(@vue/shared@3.5.13)(preact@10.27.2)(react@19.1.1)(solid-js@1.9.9)(svelte@3.59.2)
       jsdom:
         specifier: ^26.1.0
         version: 26.1.0
@@ -56,6 +59,13 @@ importers:
         version: 2.1.9(jsdom@26.1.0)
 
 packages:
+
+  '@angular/core@17.3.12':
+    resolution: {integrity: sha512-MuFt5yKi161JmauUta4Dh0m8ofwoq6Ino+KoOtkYMBGsSx+A7dSm+DUxxNwdj7+DNyg3LjVGCFgBFnq4g8z06A==}
+    engines: {node: ^18.13.0 || >=20.9.0}
+    peerDependencies:
+      rxjs: ^6.5.3 || ^7.4.0
+      zone.js: ~0.14.0
 
   '@asamuzakjp/css-color@3.2.0':
     resolution: {integrity: sha512-K1A6z8tS3XsmCMM86xoWdn7Fkdn9m6RSVtocUrJYIwZnFVkng/PvkEoWtOWmP+Scc6saYWHWZYbndEEXxl24jw==}
@@ -620,8 +630,31 @@ packages:
   estree-walker@3.0.3:
     resolution: {integrity: sha512-7RUKfXgSMMkzt6ZuXmqapOurLGPPfgj6l9uRZ7lRGolvk0y2yocc35LdcxKC5PQZdn2DMqioAQ2NoWcrTKmm6g==}
 
-  ew-responsive-store@0.0.2:
-    resolution: {integrity: sha512-SEe2NPQfsBvjXTZ0d7incGselYFMQ1Sc/nNN4IzlymIrQor4u7XrrMgCLkcJsEijRzoRdbf/afuyiLSZtcMcdw==}
+  ew-responsive-store@0.0.3-beta.2:
+    resolution: {integrity: sha512-zsopkNmBN4YWDufyi5aC9cvMMzfv03zKA3yuFP0y0AV/45+jS2fLUux6xJvTDjnT9H5jVXBBImiSqldobQHEvA==}
+    peerDependencies:
+      '@angular/core': '>=15.0.0'
+      '@vue/reactivity': ^3.0.0
+      '@vue/shared': ^3.0.0
+      preact: '>=10.0.0'
+      react: '>=16.8.0'
+      solid-js: '>=1.0.0'
+      svelte: '>=3.0.0'
+    peerDependenciesMeta:
+      '@angular/core':
+        optional: true
+      '@vue/reactivity':
+        optional: true
+      '@vue/shared':
+        optional: true
+      preact:
+        optional: true
+      react:
+        optional: true
+      solid-js:
+        optional: true
+      svelte:
+        optional: true
 
   expect-type@1.2.1:
     resolution: {integrity: sha512-/kP8CAwxzLVEeFrMm4kMmy4CCDlpipyA7MYLVrdJIkV0fYF0UaigQHRsxHiuY/GEea+bh4KSv3TIlgr+2UL6bw==}
@@ -759,6 +792,9 @@ packages:
   rrweb-cssom@0.8.0:
     resolution: {integrity: sha512-guoltQEx+9aMf2gDZ0s62EcV8lsXR+0w8915TC3ITdn2YueuNjdAYh/levpU9nFaoChh9RUS5ZdQMrKfVEN9tw==}
 
+  rxjs@7.8.2:
+    resolution: {integrity: sha512-dhKf903U/PQZY6boNNtAGdWbG85WAbjT/1xYoZIC7FAY0yWapOBQVsVrDl58W86//e1VpMNBtRV4MaXfdMySFA==}
+
   safer-buffer@2.1.2:
     resolution: {integrity: sha512-YZo3K82SD7Riyi0E1EQPojLz7kpepnSQI9IyPbHHg1XXXevb5dJI7tpyN2ADxGcQbHG7vcyRHk0cbwqcQriUtg==}
 
@@ -838,6 +874,9 @@ packages:
   tr46@5.1.1:
     resolution: {integrity: sha512-hdF5ZgjTqgAntKkklYw0R03MG2x/bSzTtkxmIRw/sTNV8YXsCJ1tfLAX23lhxhHJlEf3CRCOCGGWw3vI3GaSPw==}
     engines: {node: '>=18'}
+
+  tslib@2.8.1:
+    resolution: {integrity: sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==}
 
   typescript@5.6.3:
     resolution: {integrity: sha512-hjcS1mhfuyi4WW8IWtjP7brDrG2cuDZukyrYrSauoXGNgx0S7zceP07adYkJycEr56BOUTNPzbInooiN3fn1qw==}
@@ -958,7 +997,16 @@ packages:
   yallist@3.1.1:
     resolution: {integrity: sha512-a4UGQaWPH59mOXUYnAG2ewncQS4i4F43Tv3JoAM+s2VDAmS9NsK8GpDMLrCHPksFT7h3K6TOoUNn2pb7RoXx4g==}
 
+  zone.js@0.14.10:
+    resolution: {integrity: sha512-YGAhaO7J5ywOXW6InXNlLmfU194F8lVgu7bRntUF3TiG8Y3nBK0x1UJJuHUP/e8IyihkjCYqhCScpSwnlaSRkQ==}
+
 snapshots:
+
+  '@angular/core@17.3.12(rxjs@7.8.2)(zone.js@0.14.10)':
+    dependencies:
+      rxjs: 7.8.2
+      tslib: 2.8.1
+      zone.js: 0.14.10
 
   '@asamuzakjp/css-color@3.2.0':
     dependencies:
@@ -1463,10 +1511,15 @@ snapshots:
     dependencies:
       '@types/estree': 1.0.7
 
-  ew-responsive-store@0.0.2:
-    dependencies:
+  ew-responsive-store@0.0.3-beta.2(@angular/core@17.3.12(rxjs@7.8.2)(zone.js@0.14.10))(@vue/reactivity@3.5.13)(@vue/shared@3.5.13)(preact@10.27.2)(react@19.1.1)(solid-js@1.9.9)(svelte@3.59.2):
+    optionalDependencies:
+      '@angular/core': 17.3.12(rxjs@7.8.2)(zone.js@0.14.10)
       '@vue/reactivity': 3.5.13
       '@vue/shared': 3.5.13
+      preact: 10.27.2
+      react: 19.1.1
+      solid-js: 1.9.9
+      svelte: 3.59.2
 
   expect-type@1.2.1: {}
 
@@ -1619,6 +1672,10 @@ snapshots:
 
   rrweb-cssom@0.8.0: {}
 
+  rxjs@7.8.2:
+    dependencies:
+      tslib: 2.8.1
+
   safer-buffer@2.1.2: {}
 
   saxes@6.0.0:
@@ -1676,6 +1733,8 @@ snapshots:
   tr46@5.1.1:
     dependencies:
       punycode: 2.3.1
+
+  tslib@2.8.1: {}
 
   typescript@5.6.3: {}
 
@@ -1775,3 +1834,5 @@ snapshots:
   xmlchars@2.2.0: {}
 
   yallist@3.1.1: {}
+
+  zone.js@0.14.10: {}
