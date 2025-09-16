@@ -1,6 +1,6 @@
 import { createSignal, createEffect, onCleanup } from 'solid-js';
 import { StorageManager } from '../core/storage';
-import { StoreType, SolidStoreOptions, StorageReturn } from '../core/types.js';
+import { StoreType, SolidStoreOptions, StorageReturn } from '../core/types';
 
 export function useStorage<T>(
   key: string,

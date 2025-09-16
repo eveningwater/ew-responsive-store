@@ -132,22 +132,6 @@ export default defineConfig(({ mode }) => {
           }
         };
       
-      case 'vanilla-only':
-        return {
-          ...baseConfig,
-          build: {
-            ...baseConfig.build,
-            lib: {
-              ...baseConfig.build.lib,
-              entry: "src/vanilla.ts",
-              fileName: (format: string) => `vanilla/index.${format}.min.js`,
-            },
-            rollupOptions: {
-              ...baseConfig.build.rollupOptions,
-              external: ['@vue/reactivity', '@vue/shared', 'react', 'preact', 'solid-js', 'svelte/store', '@angular/core'],
-            }
-          }
-        };
       
       default:
         // 默认构建主入口文件，排除所有框架依赖

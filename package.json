@@ -1,6 +1,6 @@
 {
   "name": "ew-responsive-store",
-  "version": "0.0.3",
+  "version": "0.0.3-beta.1",
   "type": "module",
   "main": "dist/index.umd.min.js",
   "module": "dist/index.es.min.js",
@@ -40,11 +40,6 @@
       "import": "./dist/angular.es.min.js",
       "require": "./dist/angular.umd.min.js",
       "types": "./dist/angular.d.ts"
-    },
-    "./vanilla": {
-      "import": "./dist/vanilla/index.es.min.js",
-      "require": "./dist/vanilla/index.umd.min.js",
-      "types": "./dist/vanilla/index.d.ts"
     }
   },
   "repository": {
@@ -69,8 +64,8 @@
     "build:solid": "vite build --mode solid-only",
     "build:svelte": "vite build --mode svelte-only",
     "build:angular": "vite build --mode angular-only",
-    "build:vanilla": "vite build --mode vanilla-only",
-    "build:all": "rm -rf dist && npm run build:react && npm run build:vue && npm run build:preact && npm run build:solid && npm run build:svelte && npm run build:angular && npm run build:vanilla && npm run build && npm run tsc",
+    "build:all": "rm -rf dist && npm run build:react && npm run build:vue && npm run build:preact && npm run build:solid && npm run build:svelte && npm run build:angular && npm run build && npm run tsc && npm run clean:dist",
+    "clean:dist": "rm -f dist/main.d.ts dist/vite.svg && rm -rf dist/vanilla",
     "build:clean": "rm -rf dist && npm run build:all",
     "preview": "vite preview",
     "test": "vitest",

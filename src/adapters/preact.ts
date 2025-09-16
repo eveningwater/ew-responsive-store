@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'preact/hooks';
 import { StorageManager } from '../core/storage';
-import { StoreType, PreactStoreOptions, StorageReturn } from '../core/types.js';
+import { StoreType, PreactStoreOptions, StorageReturn } from '../core/types';
 
 export function useStorage<T>(
   key: string,

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { StorageManager } from '../core/storage';
-import { StoreType, ReactStoreOptions, StorageReturn } from '../core/types.js';
+import { StoreType, ReactStoreOptions, StorageReturn } from '../core/types';
 
 export function useStorage<T>(
   key: string,

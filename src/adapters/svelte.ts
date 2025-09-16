@@ -1,6 +1,6 @@
 import { writable, type Writable } from 'svelte/store';
 import { StorageManager } from '../core/storage';
-import { StoreType, SvelteStoreOptions } from '../core/types.js';
+import { StoreType, SvelteStoreOptions } from '../core/types';
 
 export function useStorage<T>(
   key: string,

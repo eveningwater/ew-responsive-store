@@ -1,6 +1,6 @@
 import { ref, watch } from '@vue/reactivity';
 import { StorageManager } from '../core/storage';
-import { StoreType, VueStoreOptions } from '../core/types.js';
+import { StoreType, VueStoreOptions } from '../core/types';
 
 export function useStorage<T>(
   key: string,
