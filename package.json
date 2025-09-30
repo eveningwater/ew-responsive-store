@@ -1,6 +1,6 @@
 {
   "name": "ew-responsive-store",
-  "version": "0.0.3-beta.2",
+  "version": "0.0.3-beta.3",
   "type": "module",
   "main": "dist/index.umd.min.js",
   "module": "dist/index.es.min.js",
@@ -70,7 +70,7 @@
     "preview": "vite preview",
     "test": "vitest",
     "tsc": "tsc",
-    "release": "npm publish --access public",
+    "release": "npm publish --access public --registry=https://registry.npmjs.org",
     "release:docs": "cd docs && npm run release"
   },
   "devDependencies": {

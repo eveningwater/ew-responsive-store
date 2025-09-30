@@ -1,4 +1,4 @@
-import { useStorage } from "ew-responsive-store";
+import { useStorage } from "./export/index";
 
 const vanillaData = useStorage("vanilla_test", { count: 0, message: "Hello" });
 

@@ -37,7 +37,7 @@ export default defineConfig(({ mode }) => {
             ...baseConfig.build,
             lib: {
               ...baseConfig.build.lib,
-              entry: "src/react.ts",
+              entry: "src/export/react.ts",
               fileName: (format: string) => `react.${format}.min.js`,
             },
             rollupOptions: {
@@ -54,7 +54,7 @@ export default defineConfig(({ mode }) => {
             ...baseConfig.build,
             lib: {
               ...baseConfig.build.lib,
-              entry: "src/vue.ts",
+              entry: "src/export/vue.ts",
               fileName: (format: string) => `vue.${format}.min.js`,
             },
             rollupOptions: {
@@ -71,7 +71,7 @@ export default defineConfig(({ mode }) => {
             ...baseConfig.build,
             lib: {
               ...baseConfig.build.lib,
-              entry: "src/preact.ts",
+              entry: "src/export/preact.ts",
               fileName: (format: string) => `preact.${format}.min.js`,
             },
             rollupOptions: {
@@ -88,7 +88,7 @@ export default defineConfig(({ mode }) => {
             ...baseConfig.build,
             lib: {
               ...baseConfig.build.lib,
-              entry: "src/solid.ts",
+              entry: "src/export/solid.ts",
               fileName: (format: string) => `solid.${format}.min.js`,
             },
             rollupOptions: {
@@ -105,7 +105,7 @@ export default defineConfig(({ mode }) => {
             ...baseConfig.build,
             lib: {
               ...baseConfig.build.lib,
-              entry: "src/svelte.ts",
+              entry: "src/export/svelte.ts",
               fileName: (format: string) => `svelte.${format}.min.js`,
             },
             rollupOptions: {
@@ -122,7 +122,7 @@ export default defineConfig(({ mode }) => {
             ...baseConfig.build,
             lib: {
               ...baseConfig.build.lib,
-              entry: "src/angular.ts",
+              entry: "src/export/angular.ts",
               fileName: (format: string) => `angular.${format}.min.js`,
             },
             rollupOptions: {
@@ -141,7 +141,7 @@ export default defineConfig(({ mode }) => {
             ...baseConfig.build,
             lib: {
               ...baseConfig.build.lib,
-              entry: "src/index.ts",
+              entry: "src/export/index.ts",
               fileName: (format: string) => `index.${format}.min.js`,
             },
             rollupOptions: {
