@@ -89,8 +89,8 @@ describe('Svelte Adapter', () => {
       const result = useSvelteStorage('test-key', { name: 'John' });
       
       expect(result).toBeDefined();
-      expect(result.destroy).toBeDefined();
-      expect(typeof result.destroy).toBe('function');
+      expect((result as any).destroy).toBeDefined();
+      expect(typeof (result as any).destroy).toBe('function');
     });
 
     it('should handle invalid JSON gracefully', async () => {
@@ -118,7 +118,7 @@ describe('Svelte Adapter', () => {
     it('should cleanup storage manager on destroy', async () => {
       // 简化测试，只验证函数能正常调用
       const result = useSvelteStorage('test-key', { name: 'John' });
-      expect(() => result.destroy()).not.toThrow();
+      expect(() => (result as any).destroy()).not.toThrow();
     });
   });
 
@@ -129,7 +129,7 @@ describe('Svelte Adapter', () => {
       expect(result.subscribe).toBeDefined();
       expect(result.set).toBeDefined();
       expect(result.update).toBeDefined();
-      expect(result.destroy).toBeDefined();
+      expect((result as any).destroy).toBeDefined();
     });
 
     it('should delegate set method to store', async () => {

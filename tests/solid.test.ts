@@ -9,6 +9,9 @@ vi.mock('solid-js', () => ({
   onCleanup: vi.fn(),
 }));
 
+// 类型断言以支持 mock 方法
+const mockSolidJS = vi.mocked(await import('solid-js'));
+
 // Mock localStorage and sessionStorage
 const createMockStorage = () => {
   let store: Record<string, string> = {};
@@ -52,8 +55,7 @@ describe('Solid Adapter', () => {
     // Mock signal behavior
     const mockSignal = vi.fn(() => ({ name: 'John' }));
     const mockSetter = vi.fn();
-    const { createSignal } = await import('solid-js');
-    (createSignal as any).mockReturnValue([mockSignal, mockSetter]);
+    mockSolidJS.createSignal.mockReturnValue([mockSignal, mockSetter]);
   });
 
   afterEach(() => {
@@ -64,7 +66,7 @@ describe('Solid Adapter', () => {
     it('should create signal with initial value', async () => {
       useSolidStorage('test-key', { name: 'John' });
       
-      expect((await import('solid-js')).createSignal).toHaveBeenCalledWith({ name: 'John' });
+      expect(mockSolidJS.createSignal).toHaveBeenCalledWith({ name: 'John' });
     });
 
     it('should load existing value from storage', async () => {
@@ -78,26 +80,25 @@ describe('Solid Adapter', () => {
     it('should set up effect for value changes', async () => {
       useSolidStorage('test-key', { name: 'John' });
       
-      expect((await import('solid-js')).createEffect).toHaveBeenCalled();
+      expect(mockSolidJS.createEffect).toHaveBeenCalled();
     });
 
     it('should use sessionStorage when specified', async () => {
       useSolidStorage('test-key', { name: 'John' }, { storage: StoreType.SESSION });
       
-      expect((await import('solid-js')).createSignal).toHaveBeenCalledWith({ name: 'John' });
+      expect(mockSolidJS.createSignal).toHaveBeenCalledWith({ name: 'John' });
     });
 
     it('should set up cleanup on unmount', async () => {
       useSolidStorage('test-key', { name: 'John' });
       
-      expect((await import('solid-js')).onCleanup).toHaveBeenCalled();
+      expect(mockSolidJS.onCleanup).toHaveBeenCalled();
     });
 
     it('should return signal and setter', async () => {
       const result = useSolidStorage('test-key', { name: 'John' });
       
-      const { createSignal } = await import('solid-js');
-      expect(result).toEqual([createSignal.mock.results[0].value[0], createSignal.mock.results[0].value[1]]);
+      expect(result).toEqual([mockSolidJS.createSignal.mock.results[0].value[0], mockSolidJS.createSignal.mock.results[0].value[1]]);
     });
 
     it('should handle invalid JSON gracefully', async () => {
@@ -105,14 +106,14 @@ describe('Solid Adapter', () => {
       
       useSolidStorage('test-key', { name: 'John' });
       
-      expect((await import('solid-js')).createSignal).toHaveBeenCalledWith({ name: 'John' });
+      expect(mockSolidJS.createSignal).toHaveBeenCalledWith({ name: 'John' });
     });
   });
 
   describe('Signal integration', () => {
     it('should sync value changes to storage', async () => {
       let effectCallback: Function;
-      (await import('solid-js')).createEffect.mockImplementation((callback) => {
+      mockSolidJS.createEffect.mockImplementation((callback) => {
         effectCallback = callback;
       });
       
