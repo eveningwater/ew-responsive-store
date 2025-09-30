@@ -80,7 +80,7 @@
     "@vitejs/plugin-react": "^5.0.2",
     "@vue/reactivity": "^3.5.13",
     "@vue/shared": "^3.5.13",
-    "ew-responsive-store": "0.0.3-beta.2",
+    "ew-responsive-store": "0.0.3-beta.3",
     "jsdom": "^26.1.0",
     "preact": "^10.0.0",
     "solid-js": "^1.0.0",

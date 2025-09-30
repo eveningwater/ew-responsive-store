@@ -34,8 +34,8 @@ importers:
         specifier: ^3.5.13
         version: 3.5.13
       ew-responsive-store:
-        specifier: 0.0.3-beta.2
-        version: 0.0.3-beta.2(@angular/core@17.3.12(rxjs@7.8.2)(zone.js@0.14.10))(@vue/reactivity@3.5.13)(@vue/shared@3.5.13)(preact@10.27.2)(react@19.1.1)(solid-js@1.9.9)(svelte@3.59.2)
+        specifier: 0.0.3-beta.3
+        version: 0.0.3-beta.3(@angular/core@17.3.12(rxjs@7.8.2)(zone.js@0.14.10))(@vue/reactivity@3.5.13)(@vue/shared@3.5.13)(preact@10.27.2)(react@19.1.1)(solid-js@1.9.9)(svelte@3.59.2)
       jsdom:
         specifier: ^26.1.0
         version: 26.1.0
@@ -630,8 +630,8 @@ packages:
   estree-walker@3.0.3:
     resolution: {integrity: sha512-7RUKfXgSMMkzt6ZuXmqapOurLGPPfgj6l9uRZ7lRGolvk0y2yocc35LdcxKC5PQZdn2DMqioAQ2NoWcrTKmm6g==}
 
-  ew-responsive-store@0.0.3-beta.2:
-    resolution: {integrity: sha512-zsopkNmBN4YWDufyi5aC9cvMMzfv03zKA3yuFP0y0AV/45+jS2fLUux6xJvTDjnT9H5jVXBBImiSqldobQHEvA==}
+  ew-responsive-store@0.0.3-beta.3:
+    resolution: {integrity: sha512-u4L3xOhLoiTiZJKKkfgr835fylx2nXMw3tCibvrNB4ZHxHDH+L9MSAxYixiVNzpI2OZzGVSg5LEqHt0pGwP1Bg==}
     peerDependencies:
       '@angular/core': '>=15.0.0'
       '@vue/reactivity': ^3.0.0
@@ -1511,7 +1511,7 @@ snapshots:
     dependencies:
       '@types/estree': 1.0.7
 
-  ew-responsive-store@0.0.3-beta.2(@angular/core@17.3.12(rxjs@7.8.2)(zone.js@0.14.10))(@vue/reactivity@3.5.13)(@vue/shared@3.5.13)(preact@10.27.2)(react@19.1.1)(solid-js@1.9.9)(svelte@3.59.2):
+  ew-responsive-store@0.0.3-beta.3(@angular/core@17.3.12(rxjs@7.8.2)(zone.js@0.14.10))(@vue/reactivity@3.5.13)(@vue/shared@3.5.13)(preact@10.27.2)(react@19.1.1)(solid-js@1.9.9)(svelte@3.59.2):
     optionalDependencies:
       '@angular/core': 17.3.12(rxjs@7.8.2)(zone.js@0.14.10)
       '@vue/reactivity': 3.5.13
