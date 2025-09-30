@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { useVueStorage } from '../src/vue';
+import { useVueStorage } from '../src/export/vue';
 import { StoreType } from '../src/core/types';
 
 // Mock Vue reactivity
@@ -52,10 +52,8 @@ describe('Vue Adapter', () => {
     const mockValue = {
       value: { name: 'John' }
     };
-    const { ref, watch, onUnmounted } = await import('@vue/reactivity');
+    const { ref, watch } = await import('@vue/reactivity');
     (ref as any).mockReturnValue(mockValue);
-    (watch as any).mockImplementation(() => {});
-    (onUnmounted as any).mockImplementation(() => {});
     (watch as any).mockImplementation((source: any, callback: any, options: any) => {
       // Simulate immediate execution
       if (options?.immediate) {

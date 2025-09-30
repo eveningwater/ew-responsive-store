@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { useSvelteStorage } from '../src/svelte';
+import { useSvelteStorage } from '../src/export/svelte';
 import { StoreType } from '../src/core/types';
 
 // Mock Svelte store

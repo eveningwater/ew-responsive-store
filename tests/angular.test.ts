@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { useAngularStorage, StorageService } from '../src/angular';
+import { useAngularStorage, StorageService } from '../src/export/angular';
 import { StoreType } from '../src/core/types';
 
 // Mock Angular core

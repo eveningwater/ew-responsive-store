@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { usePreactStorage } from '../src/preact';
+import { usePreactStorage } from '../src/export/preact';
 import { StoreType } from '../src/core/types';
 
 // Mock Preact

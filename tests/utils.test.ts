@@ -1,8 +1,17 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { parseStr, isValidJSON, isStorageEnabled } from '../src/core/utils';
 import { ParseStrType } from '../src/core/types';
 
 describe('utils', () => {
+  beforeEach(() => {
+    // 抑制控制台错误输出
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   describe('parseStr', () => {
     it('should parse JSON string by default', () => {
       const result = parseStr<{ name: string }>('{"name":"John"}');
@@ -58,7 +67,7 @@ describe('utils', () => {
         removeItem: () => {},
       };
       
-      expect(isStorageEnabled(mockStorage as Storage)).toBe(true);
+      expect(isStorageEnabled(mockStorage as unknown as Storage)).toBe(true);
     });
 
     it('should return false for broken storage', () => {
@@ -67,7 +76,7 @@ describe('utils', () => {
         removeItem: () => {},
       };
       
-      expect(isStorageEnabled(mockStorage as Storage)).toBe(false);
+      expect(isStorageEnabled(mockStorage as unknown as Storage)).toBe(false);
     });
   });
 });

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { useSolidStorage } from '../src/solid';
+import { useSolidStorage } from '../src/export/solid';
 import { StoreType } from '../src/core/types';
 
 // Mock Solid.js
