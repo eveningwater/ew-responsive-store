@@ -4,7 +4,7 @@
 
 If your project requires using session storage (either `localStorage` or `sessionStorage`) to persist data, and you want the data to be retained after a page refresh while also automatically updating the view when the data changes, `ew-responsive-store` is the perfect solution.
 
-It's under 1 KB in size and extremely easy to use. With just a single function call, you can make session storage data reactive, which can be applied to any framework-based project, even native JavaScript projects. The library also includes comprehensive unit tests and type inference.
+It's about 4 KB gzipped and extremely easy to use. With just a single function call, you can make session storage data reactive, which can be applied to any framework-based project, even native JavaScript projects. The library also includes comprehensive unit tests and type inference.
 
 ## Installation
 
@@ -43,6 +43,11 @@ npm install @angular/core
 ```
 
 **Note**: Framework dependencies are treated as external, so they won't be bundled with your application, keeping the library size minimal.
+
+### Environment and Dependency Notes
+
+- **React 18+**: The React adapter is built on `useSyncExternalStore`, and `peerDependencies` requires `react >= 18`. React 17 and earlier are not supported.
+- **Avoid duplicate installs**: Same-tab sync relies on a module-level registry. If multiple copies of `ew-responsive-store` are installed (multiple versions, a monorepo without hoisting, or a package manager that did not dedupe), the registry is split and components sharing the same key will not sync. Run `npm dedupe` / `pnpm dedupe` / `yarn dedupe`, or configure `resolve.dedupe: ['ew-responsive-store']` in Vite.
 
 ## Framework-Specific Imports
 

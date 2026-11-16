@@ -23,7 +23,7 @@ export type {
 export { parseStr, isValidJSON, isStorageEnabled } from '../core/utils';
 
 // 导出Angular适配器
-export { useStorage as useAngularStorage, StorageService } from '../adapters/angular';
+export { useStorage, useStorage as useAngularStorage, StorageService } from '../adapters/angular';
 
 // 导出原生版本作为备用
 export { useStorage as useVanillaStorage, GlobalStorageManager, globalStorage } from '../adapters/vanilla';

@@ -21,7 +21,7 @@ features:
     details: 支持React、Vue、Preact、Solid、Svelte、Angular和原生JS
     icon: 🔄
   - title: 轻量级
-    details: 体积不到1KB，不会给项目增加负担
+    details: 体积约 4 KB（gzip），不会给项目增加负担
     icon: 🪶
   - title: 零外部依赖
     details: 框架依赖作为外部依赖处理，减少打包体积

@@ -2,7 +2,7 @@
 
 # `ew-responsive-store` Making Session Storage Data Reactive
 
-If your project requires using session storage (either `localStorage` or `sessionStorage`) to persist data, and you want the data to be retained after a page refresh while also automatically updating the view when the data changes, I highly recommend using the `ew-responsive-store` library. It's about 3.5 KB gzipped and extremely easy to use. With just a single function call, you can make session storage data reactive, which can be applied to any framework-based project, even native JavaScript projects. The library also includes comprehensive unit tests and type inference.
+If your project requires using session storage (either `localStorage` or `sessionStorage`) to persist data, and you want the data to be retained after a page refresh while also automatically updating the view when the data changes, I highly recommend using the `ew-responsive-store` library. It's about 4 KB gzipped and extremely easy to use. With just a single function call, you can make session storage data reactive, which can be applied to any framework-based project, even native JavaScript projects. The library also includes comprehensive unit tests and type inference.
 
 ## 📖 Documentation
 
@@ -16,7 +16,7 @@ The docs cover installation, quick starts for every framework, the full API refe
 - **Multi-Framework Support**: Added support for React, Vue, Preact, Solid, Svelte, Angular, and Vanilla JS
 - **Framework-Specific Entry Points**: Each framework has its own optimized entry point (e.g., `ew-responsive-store/react`, `ew-responsive-store/vue`)
 - **Same-tab Sync**: All components using the same `key` share one manager instance
-- **Legacy Raw Strings**: New `parse: 'auto'` keeps `'dark'` / `'1'` readable as strings
+- **Legacy Raw Strings**: New `parse: 'auto'` keeps `'dark'` / `'1'` readable as strings. Note: numbers and booleans are still written as JSON, so they come back as strings after a reload — use the default `json` mode when strict types matter
 - **SSR & Privacy-mode Safe**: Falls back to in-memory storage when `window` is missing or `setItem` throws
 - **Functional Updates**: `setValue(prev => next)`, same as React `useState`
 - **Versioned Migration**: `version` + `migrate(oldValue, oldVersion)`
@@ -68,6 +68,11 @@ npm install @angular/core
 ```
 
 **Note**: Framework dependencies are treated as external, so they won't be bundled with your application, keeping the library size minimal.
+
+### Environment and Dependency Notes
+
+- **React 18+**: The React adapter is built on `useSyncExternalStore`, and `peerDependencies` requires `react >= 18`. React 17 and earlier are not supported.
+- **Avoid duplicate installs**: Same-tab sync relies on a module-level registry. If multiple copies of `ew-responsive-store` are installed (multiple versions, a monorepo without hoisting, or a package manager that did not dedupe), the registry is split and components sharing the same key will not sync. Run `npm dedupe` / `pnpm dedupe` / `yarn dedupe`, or configure `resolve.dedupe: ['ew-responsive-store']` in Vite.
 
 ## Usage
 

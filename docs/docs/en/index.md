@@ -21,7 +21,7 @@ features:
     details: Supports React, Vue, Preact, Solid, Svelte, Angular, and Vanilla JS
     icon: 🔄
   - title: Lightweight
-    details: Less than 1KB in size, no bloat in your project
+    details: About 4 KB gzipped, no bloat in your project
     icon: 🪶
   - title: Zero External Dependencies
     details: Framework dependencies are external, reducing bundle size

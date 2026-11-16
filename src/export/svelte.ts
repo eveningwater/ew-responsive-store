@@ -22,7 +22,7 @@ export type {
 export { parseStr, isValidJSON, isStorageEnabled } from '../core/utils';
 
 // 导出Svelte适配器
-export { useStorage as useSvelteStorage } from '../adapters/svelte';
+export { useStorage, useStorage as useSvelteStorage } from '../adapters/svelte';
 export type { SvelteStorage } from '../adapters/svelte';
 
 // 导出原生版本作为备用

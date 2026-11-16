@@ -23,7 +23,7 @@ export type {
 export { parseStr, isValidJSON, isStorageEnabled } from '../core/utils';
 
 // 导出Vue适配器
-export { useStorage as useVueStorage } from '../adapters/vue';
+export { useStorage, useStorage as useVueStorage } from '../adapters/vue';
 
 // 导出原生版本作为备用
 export { useStorage as useVanillaStorage, GlobalStorageManager, globalStorage } from '../adapters/vanilla';

@@ -46,7 +46,8 @@
       "types": "./dist/export/angular.d.ts",
       "import": "./dist/angular.es.min.js",
       "require": "./dist/angular.umd.min.cjs"
-    }
+    },
+    "./package.json": "./package.json"
   },
   "repository": {
     "type": "git",

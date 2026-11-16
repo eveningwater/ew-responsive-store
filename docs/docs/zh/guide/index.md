@@ -4,7 +4,7 @@
 
 如果你的项目中需要使用会话存储（`localStorage` 或 `sessionStorage`）来保存数据，且希望这些数据在页面刷新后依然能保留，并且能够在数据变化时自动更新界面，那么 `ew-responsive-store` 是完美的解决方案。
 
-它的体积不到 1 KB，简单易用，只需要调用一个方法就能将会话存储的数据变成响应式数据，可以广泛应用于各种框架的项目中，甚至是原生 JavaScript 项目，该库还具备完善的单元测试和类型推导。
+它的体积约 4 KB（gzip），简单易用，只需要调用一个方法就能将会话存储的数据变成响应式数据，可以广泛应用于各种框架的项目中，甚至是原生 JavaScript 项目，该库还具备完善的单元测试和类型推导。
 
 ## 安装
 
@@ -43,6 +43,11 @@ npm install @angular/core
 ```
 
 **注意**：框架依赖作为外部依赖处理，因此不会打包到你的应用中，保持库的体积最小。
+
+### 环境与依赖注意事项
+
+- **React 18+**：React 适配器基于 `useSyncExternalStore`，`peerDependencies` 要求 `react >= 18`，React 17 及以下版本无法使用。
+- **避免重复安装**：同一标签页的同步依赖模块级注册表。如果项目中存在多份 `ew-responsive-store`（多版本共存、monorepo 未提升、包管理器未去重），注册表会被拆成多份，相同 key 的组件将无法同步。可执行 `npm dedupe` / `pnpm dedupe` / `yarn dedupe`，或在 Vite 中配置 `resolve.dedupe: ['ew-responsive-store']`。
 
 ## 框架专用导入
 

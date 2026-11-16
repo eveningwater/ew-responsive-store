@@ -24,7 +24,7 @@ export type {
 export { parseStr, isValidJSON, isStorageEnabled } from '../core/utils';
 
 // 导出React适配器
-export { useStorage as useReactStorage } from '../adapters/react';
+export { useStorage, useStorage as useReactStorage } from '../adapters/react';
 
 // 导出原生版本作为备用
 export { useStorage as useVanillaStorage, GlobalStorageManager, globalStorage } from '../adapters/vanilla';

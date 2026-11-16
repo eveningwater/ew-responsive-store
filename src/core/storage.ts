@@ -57,6 +57,8 @@ export class StorageManager<T> implements IStorageManager<T> {
   private current: T | typeof UNINITIALIZED = UNINITIALIZED;
   private lastRaw: string | null | undefined = undefined;
   private usingMemory = false;
+  // 迁移结果延迟到非渲染阶段落盘，保证 getSnapshot 不产生写副作用
+  private pendingMigration = false;
   private listeners = new Set<(value: T) => void>();
   private windowListener?: (e: StorageEvent) => void;
 
@@ -97,6 +99,7 @@ export class StorageManager<T> implements IStorageManager<T> {
   getInitialSnapshot = (): T => this.resolveInitial();
 
   setValue = (valueOrUpdater: StorageUpdater<T>): void => {
+    this.flushPendingMigration();
     const prev = this.getSnapshot();
     const next = isFunction(valueOrUpdater)
       ? (valueOrUpdater as (prev: T) => T)(prev)
@@ -114,6 +117,7 @@ export class StorageManager<T> implements IStorageManager<T> {
   };
 
   subscribe = (listener: (value: T) => void): (() => void) => {
+    this.flushPendingMigration();
     if (this.listeners.size === 0) {
       // 无订阅者期间存储可能已被其他标签页或外部代码修改，先刷新一次
       this.refresh();
@@ -130,6 +134,7 @@ export class StorageManager<T> implements IStorageManager<T> {
   };
 
   remove = (): void => {
+    this.pendingMigration = false;
     const area = this.getWritableArea();
     this.safeRun('remove', () => area.removeItem(this.key));
     this.safeRun('remove', () => area.removeItem(this.versionKey));
@@ -197,7 +202,7 @@ export class StorageManager<T> implements IStorageManager<T> {
       if (oldVersion < version) {
         try {
           value = migrate(value, oldVersion);
-          this.writeValue(value);
+          this.pendingMigration = true;
         } catch (error) {
           this.report('migrate', error);
         }
@@ -275,18 +280,29 @@ export class StorageManager<T> implements IStorageManager<T> {
   private refresh(): void {
     if (this.current === UNINITIALIZED) {
       this.getSnapshot();
-      return;
+    } else {
+      const raw = this.readRaw();
+      if (raw === this.lastRaw) {
+        this.flushPendingMigration();
+        return;
+      }
+      this.lastRaw = raw;
+      this.current = this.loadValue(raw);
     }
-    const raw = this.readRaw();
-    if (raw === this.lastRaw) return;
-    this.lastRaw = raw;
-    this.current = this.loadValue(raw);
+    this.flushPendingMigration();
+  }
+
+  private flushPendingMigration(): void {
+    if (!this.pendingMigration || this.current === UNINITIALIZED) return;
+    this.pendingMigration = false;
+    this.writeValue(this.current as T);
   }
 
   private applyExternalValue(raw: string | null): void {
     if (raw === this.lastRaw) return;
     this.lastRaw = raw;
     this.current = this.loadValue(raw);
+    this.flushPendingMigration();
     this.notify(this.current as T);
   }
 
@@ -372,6 +388,7 @@ export class StorageManager<T> implements IStorageManager<T> {
       } catch (e) {
         // onError 自身异常不应影响存储流程
       }
+      return;
     }
     if (isBrowser && typeof console !== 'undefined') {
       console.error(`[rds error](${operation}):`, error);

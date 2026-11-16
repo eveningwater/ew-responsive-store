@@ -231,10 +231,14 @@ describe('StorageManager', () => {
 
     expect(manager.getSnapshot()).toEqual({ name: 'John', role: 'admin' });
     expect(migrate).toHaveBeenCalledWith({ name: 'John' }, 0);
+    // getSnapshot 只读：迁移结果在 subscribe 等非渲染阶段才落盘
+    expect(mocked.local.storage.getItem('profile')).toBe(JSON.stringify({ name: 'John' }));
+    const unsubscribe = manager.subscribe(() => {});
     expect(mocked.local.storage.getItem('profile')).toBe(
       JSON.stringify({ name: 'John', role: 'admin' }),
     );
     expect(mocked.local.storage.getItem('profile::__rds_version__')).toBe('2');
+    unsubscribe();
 
     // 再次创建不会重复迁移
     const again = new StorageManager('profile', {}, { version: 2, migrate });
