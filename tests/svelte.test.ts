@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useSvelteStorage } from '../src/export/svelte';
-import { clearStorageManagerRegistry, getStorageManager } from '../src/core/storage';
+import { clearStorageManagerRegistry, getRegisteredManagers, getStorageManager } from '../src/core/storage';
 import { installMockStorage, restoreStorage, silenceConsoleError } from './helpers';
 
 describe('Svelte Adapter', () => {
@@ -15,6 +15,23 @@ describe('Svelte Adapter', () => {
     clearStorageManagerRegistry();
     restoreStorage();
     vi.restoreAllMocks();
+  });
+
+  it('退订回收后再次订阅会重新获取管理器', async () => {
+    const store = useSvelteStorage('draft:x', 0);
+    const unsubscribe = store.subscribe(() => {});
+    unsubscribe();
+    await Promise.resolve();
+
+    expect(getRegisteredManagers().some((item) => item.key === 'draft:x')).toBe(false);
+
+    const values: number[] = [];
+    const unsubscribeAgain = store.subscribe((value) => values.push(value));
+    store.set(7);
+
+    expect(getStorageManager('draft:x', 0).getSnapshot()).toBe(7);
+    expect(values).toEqual([0, 7]);
+    unsubscribeAgain();
   });
 
   it('订阅时立即派发当前值', () => {

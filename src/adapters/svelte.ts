@@ -1,5 +1,5 @@
 import type { Unsubscriber, Updater, Writable } from 'svelte/store';
-import { getStorageManager } from '../core/storage';
+import { getStorageManager, releaseStorageManager, retainStorageManager } from '../core/storage';
 import { SvelteStoreOptions, StorageUpdater } from '../core/types';
 
 export interface SvelteStorage<T> extends Writable<T> {
@@ -20,13 +20,18 @@ export function useStorage<T>(
   initialValue: T | (() => T),
   options: SvelteStoreOptions<T> = {},
 ): SvelteStorage<T> {
-  const manager = getStorageManager<T>(key, initialValue, options);
+  let manager = getStorageManager<T>(key, initialValue, options);
 
   const subscribers = new Set<(value: T) => void>();
   let unsubscribeManager: Unsubscriber | null = null;
+  let retained = false;
 
   const start = () => {
     if (subscribers.size !== 1) return;
+    // 上一次 stop 可能已经把管理器回收，这里重新获取（存在则复用，不存在则重建）
+    manager = getStorageManager<T>(key, initialValue, options);
+    retainStorageManager(manager.key, manager.storageType);
+    retained = true;
     unsubscribeManager = manager.subscribe((next) => {
       subscribers.forEach((listener) => listener(next));
     });
@@ -36,6 +41,10 @@ export function useStorage<T>(
     if (subscribers.size !== 0) return;
     unsubscribeManager?.();
     unsubscribeManager = null;
+    if (retained) {
+      retained = false;
+      releaseStorageManager(manager.key, manager.storageType);
+    }
   };
 
   return {
@@ -64,6 +73,10 @@ export function useStorage<T>(
       subscribers.clear();
       unsubscribeManager?.();
       unsubscribeManager = null;
+      if (retained) {
+        retained = false;
+        releaseStorageManager(manager.key, manager.storageType);
+      }
     },
   };
 }

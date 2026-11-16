@@ -48,6 +48,7 @@ npm install @angular/core
 
 - **React 18+**: The React adapter is built on `useSyncExternalStore`, and `peerDependencies` requires `react >= 18`. React 17 and earlier are not supported.
 - **Avoid duplicate installs**: Same-tab sync relies on a module-level registry. If multiple copies of `ew-responsive-store` are installed (multiple versions, a monorepo without hoisting, or a package manager that did not dedupe), the registry is split and components sharing the same key will not sync. Run `npm dedupe` / `pnpm dedupe` / `yarn dedupe`, or configure `resolve.dedupe: ['ew-responsive-store']` in Vite.
+- **Dynamic key cleanup**: Framework adapters release the manager automatically on unmount. For manually created instances or non-component scenarios, call `releaseStorageManager(key, storage)`; the instance is removed from the registry and destroyed in a microtask. When using Vue outside setup, wrap the call in `effectScope()` and call `scope.stop()` to release automatically. In Angular, call it within an injection context (component/service), otherwise release manually.
 
 ## Framework-Specific Imports
 
@@ -142,5 +143,37 @@ const countList = useStorage("countList", [1, 2, 3]);
 // Modify the array
 countList.value.push(4); // The array becomes [1, 2, 3, 4]
 ```
+
+### Using Outside setup (effectScope)
+
+The Vue adapter releases the storage manager on unmount via `onScopeDispose`. When you call it outside `setup` or an `effectScope` (e.g. a module-level singleton, Pinia store initialization, or a utility function), there is no lifecycle to hook into, so create an explicit scope:
+
+```ts
+import { effectScope } from 'vue'
+import { useStorage } from 'ew-responsive-store/vue'
+
+const scope = effectScope()
+
+// Called inside the scope, useStorage binds to it automatically
+const settings = scope.run(() => useStorage('settings', { theme: 'light' }))!
+
+settings.value.theme = 'dark'
+
+// Stop the scope when it is no longer needed; the manager is released automatically
+scope.stop()
+```
+
+Notes:
+
+- `scope.stop()` also stops watchers and reactive effects inside the scope; afterwards `settings` is no longer synced with storage.
+- If `effectScope` is not an option, release manually. The key and storage area must match the ones used at creation:
+
+```ts
+import { releaseStorageManager, StoreType } from 'ew-responsive-store'
+
+releaseStorageManager('settings', StoreType.LOCAL)
+```
+
+- Calling `useStorage` directly inside a component's `setup` needs no extra handling; unmount releases it automatically.
 
 For more advanced usage and configuration options, check out the [API Reference](/api/) section.

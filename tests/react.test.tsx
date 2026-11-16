@@ -3,7 +3,7 @@ import { renderToString } from 'react-dom/server';
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useReactStorage } from '../src/export/react';
-import { clearStorageManagerRegistry } from '../src/core/storage';
+import { clearStorageManagerRegistry, getRegisteredManagers } from '../src/core/storage';
 import {
   dispatchStorageEvent,
   installMockStorage,
@@ -56,6 +56,30 @@ describe('React Adapter', () => {
     });
 
     expect(result.current[0]).toBe(2);
+  });
+
+  it('动态 key 切换与卸载后回收管理器', async () => {
+    const { rerender, unmount } = renderHook(
+      ({ key }: { key: string }) => useReactStorage(key, ''),
+      { initialProps: { key: 'draft:1' } },
+    );
+
+    expect(getRegisteredManagers().some((item) => item.key === 'draft:1')).toBe(true);
+
+    rerender({ key: 'draft:2' });
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(getRegisteredManagers().some((item) => item.key === 'draft:1')).toBe(false);
+    expect(getRegisteredManagers().some((item) => item.key === 'draft:2')).toBe(true);
+
+    unmount();
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(getRegisteredManagers().some((item) => item.key === 'draft:2')).toBe(false);
   });
 
   it('同标签页多组件共享实例并同步', () => {

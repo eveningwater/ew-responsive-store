@@ -1,5 +1,5 @@
 import { createSignal, onCleanup } from 'solid-js';
-import { getStorageManager } from '../core/storage';
+import { getStorageManager, releaseStorageManager, retainStorageManager } from '../core/storage';
 import {
   SolidStoreOptions,
   StorageActions,
@@ -25,8 +25,12 @@ export function useStorage<T>(
   const unsubscribe = manager.subscribe((next) => {
     setSignal(() => next);
   });
+  retainStorageManager(manager.key, manager.storageType);
 
-  onCleanup(unsubscribe);
+  onCleanup(() => {
+    unsubscribe();
+    releaseStorageManager(manager.key, manager.storageType);
+  });
 
   const setValue = (next: StorageUpdater<T>) => manager.setValue(next);
 

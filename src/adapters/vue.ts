@@ -1,5 +1,5 @@
 import { getCurrentScope, onScopeDispose, ref, watch, type Ref } from '@vue/reactivity';
-import { getStorageManager } from '../core/storage';
+import { getStorageManager, releaseStorageManager, retainStorageManager } from '../core/storage';
 import { StoreType, VueStoreOptions } from '../core/types';
 
 /**
@@ -60,9 +60,11 @@ export function useStorage<T>(
   });
 
   if (getCurrentScope()) {
+    retainStorageManager(manager.key, manager.storageType);
     onScopeDispose(() => {
       stopWatch();
       unsubscribe();
+      releaseStorageManager(manager.key, manager.storageType);
     });
   }
 

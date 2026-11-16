@@ -61,6 +61,7 @@ export class StorageManager<T> implements IStorageManager<T> {
   private pendingMigration = false;
   private listeners = new Set<(value: T) => void>();
   private windowListener?: (e: StorageEvent) => void;
+  private onIdle?: () => void;
 
   constructor(
     key: string,
@@ -129,6 +130,8 @@ export class StorageManager<T> implements IStorageManager<T> {
       this.listeners.delete(listener);
       if (this.listeners.size === 0) {
         this.detachWindowListener();
+        // 没有订阅者且注册表也无人持有引用时，交由注册表延迟回收
+        this.onIdle?.();
       }
     };
   };
@@ -157,6 +160,16 @@ export class StorageManager<T> implements IStorageManager<T> {
   destroy(): void {
     this.detachWindowListener();
     this.listeners.clear();
+  }
+
+  /** 当前订阅者数量，供注册表判断是否可以回收 */
+  getListenerCount(): number {
+    return this.listeners.size;
+  }
+
+  /** 内部使用：注册空闲回调 */
+  setOnIdle(handler?: () => void): void {
+    this.onIdle = handler;
   }
 
   private get versionKey() {
@@ -396,9 +409,32 @@ export class StorageManager<T> implements IStorageManager<T> {
   }
 }
 
-const managerRegistry = new Map<string, StorageManager<any>>();
+interface StorageManagerEntry {
+  manager: StorageManager<any>;
+  refCount: number;
+}
+
+const managerRegistry = new Map<string, StorageManagerEntry>();
+const pendingDeletes = new Set<string>();
 
 const getRegistryId = (key: string, storage: StoreType) => `${storage}:${key}`;
+
+/**
+ * 延迟到微任务回收。
+ * React StrictMode 会「挂载 → 卸载 → 再挂载」，同步删除会让重新挂载的组件
+ * 继续持有已出注册表的旧实例；放到微任务里，重新 retain 后即可取消回收。
+ */
+function scheduleRelease(id: string): void {
+  if (pendingDeletes.has(id)) return;
+  pendingDeletes.add(id);
+  queueMicrotask(() => {
+    pendingDeletes.delete(id);
+    const entry = managerRegistry.get(id);
+    if (!entry || entry.refCount > 0 || entry.manager.getListenerCount() > 0) return;
+    managerRegistry.delete(id);
+    entry.manager.destroy();
+  });
+}
 
 /**
  * 获取（或创建）同 key 的共享管理器。
@@ -412,17 +448,42 @@ export function getStorageManager<T>(
 ): StorageManager<T> {
   const id = getRegistryId(key, options.storage ?? StoreType.LOCAL);
   const existing = managerRegistry.get(id);
-  if (existing) return existing as StorageManager<T>;
+  if (existing) return existing.manager as StorageManager<T>;
 
   const manager = new StorageManager<T>(key, initialValue, options);
-  managerRegistry.set(id, manager);
+  manager.setOnIdle(() => scheduleRelease(id));
+  managerRegistry.set(id, { manager, refCount: 0 });
   return manager;
+}
+
+/**
+ * 持有管理器引用，与 `releaseStorageManager` 成对调用。
+ * 框架适配器在挂载时持有、卸载时释放；非组件场景可手动调用。
+ */
+export function retainStorageManager(key: string, storage: StoreType = StoreType.LOCAL): void {
+  const entry = managerRegistry.get(getRegistryId(key, storage));
+  if (entry) entry.refCount += 1;
+}
+
+/**
+ * 释放管理器引用。
+ * 引用计数归零且没有订阅者时，实例会在微任务中从注册表移除并销毁。
+ */
+export function releaseStorageManager(key: string, storage: StoreType = StoreType.LOCAL): void {
+  const id = getRegistryId(key, storage);
+  const entry = managerRegistry.get(id);
+  if (!entry) return;
+  if (entry.refCount > 0) entry.refCount -= 1;
+  if (entry.refCount === 0 && entry.manager.getListenerCount() === 0) {
+    scheduleRelease(id);
+  }
 }
 
 /** 获取已注册的管理器列表 */
 export function getRegisteredManagers(storage?: StoreType): StorageManager<any>[] {
-  if (isUndefined(storage)) return Array.from(managerRegistry.values());
-  return Array.from(managerRegistry.values()).filter((manager) => manager.storageType === storage);
+  const managers = Array.from(managerRegistry.values()).map((entry) => entry.manager);
+  if (isUndefined(storage)) return managers;
+  return managers.filter((manager) => manager.storageType === storage);
 }
 
 /**
@@ -435,6 +496,7 @@ export function clearManagedStorage(storage?: StoreType): void {
 
 /** 销毁并移除所有已注册的管理器（主要用于测试或热更新） */
 export function clearStorageManagerRegistry(): void {
-  managerRegistry.forEach((manager) => manager.destroy());
+  pendingDeletes.clear();
+  managerRegistry.forEach((entry) => entry.manager.destroy());
   managerRegistry.clear();
 }

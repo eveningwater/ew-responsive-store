@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'preact/hooks';
-import { getStorageManager } from '../core/storage';
+import { getStorageManager, releaseStorageManager, retainStorageManager } from '../core/storage';
 import {
   PreactStoreOptions,
   StorageActions,
@@ -46,9 +46,13 @@ export function useStorage<T>(
     };
 
     const unsubscribe = manager.subscribe(sync);
+    retainStorageManager(manager.key, manager.storageType);
     // 覆盖订阅前可能发生的变更
     sync(manager.getSnapshot());
-    return unsubscribe;
+    return () => {
+      unsubscribe();
+      releaseStorageManager(manager.key, manager.storageType);
+    };
   }, [manager]);
 
   const setValue = useCallback(

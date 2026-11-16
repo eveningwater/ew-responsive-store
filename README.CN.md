@@ -73,6 +73,7 @@ npm install @angular/core
 
 - **React 18+**：React 适配器基于 `useSyncExternalStore`，`peerDependencies` 要求 `react >= 18`，React 17 及以下版本无法使用。
 - **避免重复安装**：同一标签页的同步依赖模块级注册表。如果项目中存在多份 `ew-responsive-store`（多版本共存、monorepo 未提升、包管理器未去重），注册表会被拆成多份，相同 key 的组件将无法同步。可执行 `npm dedupe` / `pnpm dedupe` / `yarn dedupe`，或在 Vite 中配置 `resolve.dedupe: ['ew-responsive-store']`。
+- **动态 key 的回收**：框架适配器会在组件卸载时自动释放管理器；手动创建的实例或非组件场景，可调用 `releaseStorageManager(key, storage)` 释放，实例会在微任务中从注册表移除并销毁。Vue 在 setup 外使用时，可放入 `effectScope()` 中，调用 `scope.stop()` 即可自动释放；Angular 请在组件/服务的注入上下文中调用，否则需手动释放。
 
 ## 使用
 

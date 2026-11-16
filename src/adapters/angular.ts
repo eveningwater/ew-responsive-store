@@ -1,5 +1,5 @@
 import { computed, DestroyRef, inject, Injectable, signal } from '@angular/core';
-import { getStorageManager } from '../core/storage';
+import { getStorageManager, releaseStorageManager, retainStorageManager } from '../core/storage';
 import {
   AngularStorageReturn,
   AngularStoreOptions,
@@ -12,7 +12,8 @@ import {
  * 通过 `inject(StorageService)` 获取，内部按 key 复用同一个管理器实例。
  */
 export class StorageService {
-  private destroyRef = inject(DestroyRef);
+  // 服务自身（通常是根级）的销毁时机，仅作为非注入上下文的兜底
+  private rootDestroyRef = inject(DestroyRef);
 
   useStorage<T>(
     key: string,
@@ -21,9 +22,22 @@ export class StorageService {
   ): AngularStorageReturn<T> {
     const manager = getStorageManager<T>(key, initialValue, options);
 
+    // 在组件构造函数 / 字段初始化器中调用时，这里拿到的是「调用方组件」的 DestroyRef；
+    // 因此即使 StorageService 是 providedIn: 'root'，也能随组件销毁自动释放。
+    let destroyRef = this.rootDestroyRef;
+    try {
+      destroyRef = inject(DestroyRef);
+    } catch {
+      // 不在注入上下文中（例如延迟到组件外调用），退回根级并依赖手动 release
+    }
+
     const store = signal<T>(manager.getSnapshot());
     const unsubscribe = manager.subscribe((next) => store.set(next));
-    this.destroyRef.onDestroy(unsubscribe);
+    retainStorageManager(manager.key, manager.storageType);
+    destroyRef.onDestroy(() => {
+      unsubscribe();
+      releaseStorageManager(manager.key, manager.storageType);
+    });
 
     return {
       value: computed(() => store()),

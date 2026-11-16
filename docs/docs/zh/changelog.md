@@ -2,6 +2,32 @@
 
 本项目的所有重要变更都会记录在此页，版本号遵循[语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.0.5] - 2026-11-16
+
+以修复子入口导出和生命周期回收为主的补丁版本。
+
+### 修复
+
+- **子入口缺少 `useStorage`**：React、Vue、Preact、Solid、Svelte、Angular 六个入口此前只导出 `useXxxStorage`，按文档 `import { useStorage } from 'ew-responsive-store/react'` 会拿到 `undefined`。现在两个名字同时可用，旧别名不受影响。
+- **`getSnapshot` 在渲染阶段写存储**：版本迁移此前在 `getSnapshot` 内直接回写，违反 `useSyncExternalStore` 的纯函数要求。现在迁移结果延迟到订阅、外部变更、`setValue` 等非渲染路径落盘。
+- **配置 `onError` 后仍输出 `console.error`**：现在只调用回调，不再重复打印。
+- **`exports` 补充 `"./package.json"`**：兼容会读取包清单的工具链。
+
+### 新增
+
+- **管理器回收**：新增 `retainStorageManager` / `releaseStorageManager`。注册表按引用计数与订阅者数量判断是否回收，回收延迟到微任务执行，避免 React StrictMode 的「挂载 → 卸载 → 再挂载」误删仍在使用的实例。
+- **适配器自动释放**：7 个框架适配器都会在卸载时释放管理器。Angular 即使 `StorageService` 是 `providedIn: 'root'`，也会使用调用方组件的 `DestroyRef`；Svelte 在实例被回收后重新订阅会自动重新获取。
+
+### 文档
+
+- 体积描述由「不到 1 KB」更正为实际约 4 KB（gzip）。
+- 补充 React 18+ 要求、重复安装时需 `dedupe`、动态 key 回收，以及 Vue 在 setup 外使用 `effectScope` 的完整示例。
+- 修正中文文档导航与页内链接。
+
+### 已知限制
+
+- `parse: 'auto'` 下数字与布尔仍以 JSON 写入，读取时可能回落为字符串；需要严格类型请使用默认的 `json` 模式。
+
 ## [0.0.4] - 2026-11-16
 
 这是一次以稳定性、可预测性和工程化为主的重构版本。

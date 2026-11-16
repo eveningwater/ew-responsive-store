@@ -1,8 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { StorageService } from '../src/export/angular';
-import { clearStorageManagerRegistry } from '../src/core/storage';
+import { clearStorageManagerRegistry, getRegisteredManagers } from '../src/core/storage';
 import { StoreType } from '../src/core/types';
 import { installMockStorage, restoreStorage, silenceConsoleError } from './helpers';
+
+const destroyCallbacks: Array<() => void> = [];
+(globalThis as any).__angularDestroyCallbacks = destroyCallbacks;
 
 vi.mock('@angular/core', () => {
   const signal = (initial: unknown) => {
@@ -17,10 +20,16 @@ vi.mock('@angular/core', () => {
     return read;
   };
 
+  const destroyRef = {
+    onDestroy: (callback: () => void) => {
+      destroyCallbacks.push(callback);
+    },
+  };
+
   return {
     signal,
     computed: (fn: () => unknown) => fn,
-    inject: () => ({ onDestroy: () => {} }),
+    inject: () => destroyRef,
     DestroyRef: class DestroyRef {},
     Injectable: () => (target: unknown) => target,
   };
@@ -32,6 +41,7 @@ describe('Angular Adapter', () => {
   beforeEach(() => {
     mocked = installMockStorage();
     silenceConsoleError();
+    destroyCallbacks.length = 0;
   });
 
   afterEach(() => {
@@ -90,5 +100,16 @@ describe('Angular Adapter', () => {
 
     expect(mocked.session.storage.getItem('count')).toBe('5');
     expect(mocked.local.storage.getItem('count')).toBeNull();
+  });
+
+  it('销毁时释放管理器', async () => {
+    const service = new StorageService();
+    service.useStorage('count', 0);
+    expect(getRegisteredManagers().some((item) => item.key === 'count')).toBe(true);
+
+    destroyCallbacks.forEach((callback) => callback());
+    await Promise.resolve();
+
+    expect(getRegisteredManagers().some((item) => item.key === 'count')).toBe(false);
   });
 });

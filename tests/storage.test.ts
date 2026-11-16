@@ -3,7 +3,10 @@ import {
   StorageManager,
   clearManagedStorage,
   clearStorageManagerRegistry,
+  getRegisteredManagers,
   getStorageManager,
+  releaseStorageManager,
+  retainStorageManager,
 } from '../src/core/storage';
 import { StoreType } from '../src/core/types';
 import {
@@ -266,6 +269,52 @@ describe('StorageManager', () => {
     dispatchStorageEvent('profile', JSON.stringify({ name: 'Jane' }));
 
     expect(subscriber).not.toHaveBeenCalled();
+  });
+
+  it('最后一个订阅者退订后回收无引用的管理器', async () => {
+    const manager = getStorageManager('draft:a', 0);
+    const unsubscribe = manager.subscribe(() => {});
+    unsubscribe();
+    await Promise.resolve();
+
+    expect(getRegisteredManagers().some((item) => item.key === 'draft:a')).toBe(false);
+  });
+
+  it('引用计数未归零时保留共享管理器', async () => {
+    getStorageManager('draft:b', 0);
+    retainStorageManager('draft:b');
+    retainStorageManager('draft:b');
+
+    releaseStorageManager('draft:b');
+    await Promise.resolve();
+    expect(getRegisteredManagers().some((item) => item.key === 'draft:b')).toBe(true);
+
+    releaseStorageManager('draft:b');
+    await Promise.resolve();
+    expect(getRegisteredManagers().some((item) => item.key === 'draft:b')).toBe(false);
+  });
+
+  it('仍有订阅者时 release 不会销毁实例', async () => {
+    const manager = getStorageManager('draft:c', 0);
+    retainStorageManager('draft:c');
+    const unsubscribe = manager.subscribe(() => {});
+
+    releaseStorageManager('draft:c');
+    await Promise.resolve();
+    expect(getRegisteredManagers().some((item) => item.key === 'draft:c')).toBe(true);
+
+    unsubscribe();
+    await Promise.resolve();
+    expect(getRegisteredManagers().some((item) => item.key === 'draft:c')).toBe(false);
+  });
+
+  it('微任务回收前重新持有会取消回收（StrictMode 场景）', async () => {
+    getStorageManager('draft:d', 0);
+    releaseStorageManager('draft:d');
+    retainStorageManager('draft:d');
+    await Promise.resolve();
+
+    expect(getRegisteredManagers().some((item) => item.key === 'draft:d')).toBe(true);
   });
 });
 

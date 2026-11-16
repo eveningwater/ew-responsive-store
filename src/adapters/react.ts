@@ -1,5 +1,5 @@
-import { useCallback, useMemo, useSyncExternalStore } from 'react';
-import { getStorageManager } from '../core/storage';
+import { useCallback, useEffect, useMemo, useSyncExternalStore } from 'react';
+import { getStorageManager, releaseStorageManager, retainStorageManager } from '../core/storage';
 import {
   ReactStoreOptions,
   StorageActions,
@@ -36,6 +36,12 @@ export function useStorage<T>(
     manager.getSnapshot,
     manager.getInitialSnapshot,
   );
+
+  // 挂载时持有、卸载时释放，避免动态 key 的管理器残留
+  useEffect(() => {
+    retainStorageManager(manager.key, manager.storageType);
+    return () => releaseStorageManager(manager.key, manager.storageType);
+  }, [manager]);
 
   const setValue = useCallback(
     (next: StorageUpdater<T>) => manager.setValue(next),

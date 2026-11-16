@@ -2,6 +2,32 @@
 
 All notable changes to this project are documented on this page. This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.0.5] - 2026-11-16
+
+A patch release focused on subpath exports and lifecycle cleanup.
+
+### Fixed
+
+- **Missing `useStorage` in subpath entries**: the React, Vue, Preact, Solid, Svelte, and Angular entries only exported `useXxxStorage`, so the documented `import { useStorage } from 'ew-responsive-store/react'` returned `undefined`. Both names are now available, and the old aliases still work.
+- **`getSnapshot` wrote to storage during render**: version migration used to write back inside `getSnapshot`, violating the purity requirement of `useSyncExternalStore`. Migration results are now persisted on non-render paths such as subscribe, external changes, and `setValue`.
+- **`console.error` was still emitted when `onError` was configured**: now only the callback runs.
+- **Added `"./package.json"` to `exports`** for tooling that reads the package manifest.
+
+### Added
+
+- **Manager recycling**: `retainStorageManager` / `releaseStorageManager`. The registry decides whether to recycle based on the reference count and subscriber count, and defers removal to a microtask so React StrictMode's mount → unmount → remount does not drop an instance that is still in use.
+- **Automatic release in adapters**: all 7 framework adapters release the manager on unmount. In Angular, even when `StorageService` is `providedIn: 'root'`, the caller component's `DestroyRef` is used; in Svelte, a recycled instance is re-acquired automatically on the next subscription.
+
+### Docs
+
+- Corrected the bundle size claim from "under 1 KB" to about 4 KB gzipped.
+- Documented the React 18+ requirement, `dedupe` for duplicate installs, dynamic key cleanup, and a complete `effectScope` example for Vue usage outside setup.
+- Fixed Chinese navigation and in-page links.
+
+### Known Limitations
+
+- With `parse: 'auto'`, numbers and booleans are still written as JSON and may come back as strings; use the default `json` mode when strict types matter.
+
 ## [0.0.4] - 2026-11-16
 
 A refactoring release focused on stability, predictability, and packaging.

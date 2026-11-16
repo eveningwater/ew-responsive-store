@@ -5,6 +5,8 @@
 export {
   StorageManager,
   getStorageManager,
+  retainStorageManager,
+  releaseStorageManager,
   getRegisteredManagers,
   clearManagedStorage,
   clearStorageManagerRegistry,

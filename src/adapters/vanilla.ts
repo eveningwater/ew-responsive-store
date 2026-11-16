@@ -1,4 +1,9 @@
-import { clearStorageManagerRegistry, getStorageManager } from '../core/storage';
+import {
+  clearStorageManagerRegistry,
+  getStorageManager,
+  releaseStorageManager,
+  retainStorageManager,
+} from '../core/storage';
 import { StorageUpdater, VanillaStoreOptions } from '../core/types';
 
 // 导出StoreType供原生JavaScript使用
@@ -30,6 +35,8 @@ export function useStorage<T>(
   const unsubscribeManager = manager.subscribe((next) => {
     listeners.forEach((listener) => listener(next));
   });
+  retainStorageManager(manager.key, manager.storageType);
+  let destroyed = false;
 
   const result: VanillaStorageReturn<T> = {
     get value() {
@@ -45,8 +52,11 @@ export function useStorage<T>(
       return () => listeners.delete(listener);
     },
     destroy: () => {
+      if (destroyed) return;
+      destroyed = true;
       listeners.clear();
       unsubscribeManager();
+      releaseStorageManager(manager.key, manager.storageType);
     },
   };
 

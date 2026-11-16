@@ -73,6 +73,7 @@ npm install @angular/core
 
 - **React 18+**: The React adapter is built on `useSyncExternalStore`, and `peerDependencies` requires `react >= 18`. React 17 and earlier are not supported.
 - **Avoid duplicate installs**: Same-tab sync relies on a module-level registry. If multiple copies of `ew-responsive-store` are installed (multiple versions, a monorepo without hoisting, or a package manager that did not dedupe), the registry is split and components sharing the same key will not sync. Run `npm dedupe` / `pnpm dedupe` / `yarn dedupe`, or configure `resolve.dedupe: ['ew-responsive-store']` in Vite.
+- **Dynamic key cleanup**: Framework adapters release the manager automatically on unmount. For manually created instances or non-component scenarios, call `releaseStorageManager(key, storage)`; the instance is removed from the registry and destroyed in a microtask. When using Vue outside setup, wrap the call in `effectScope()` and call `scope.stop()` to release automatically. In Angular, call it within an injection context (component/service), otherwise release manually.
 
 ## Usage
 
