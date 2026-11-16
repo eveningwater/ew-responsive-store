@@ -1,165 +1,153 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+import React, { StrictMode } from 'react';
+import { renderToString } from 'react-dom/server';
+import { act, renderHook } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useReactStorage } from '../src/export/react';
-import { StoreType } from '../src/core/types';
-
-// Mock React
-vi.mock('react', () => ({
-  useState: vi.fn(),
-  useEffect: vi.fn(),
-  useCallback: vi.fn(),
-}));
-
-// Mock localStorage
-const createMockStorage = () => {
-  let store: Record<string, string> = {};
-  return {
-    getItem: vi.fn((key: string) => store[key] || null),
-    setItem: vi.fn((key: string, value: string) => {
-      store[key] = value;
-    }),
-    removeItem: vi.fn((key: string) => {
-      delete store[key];
-    }),
-    clear: vi.fn(() => {
-      store = {};
-    }),
-    get length() {
-      return Object.keys(store).length;
-    },
-    key: vi.fn((index: number) => Object.keys(store)[index] || null),
-  };
-};
+import { clearStorageManagerRegistry } from '../src/core/storage';
+import {
+  dispatchStorageEvent,
+  installMockStorage,
+  restoreStorage,
+  silenceConsoleError,
+} from './helpers';
 
 describe('React Adapter', () => {
-  let mockLocalStorage: ReturnType<typeof createMockStorage>;
-  let mockSessionStorage: ReturnType<typeof createMockStorage>;
+  let mocked: ReturnType<typeof installMockStorage>;
 
-  beforeEach(async () => {
-    mockLocalStorage = createMockStorage();
-    mockSessionStorage = createMockStorage();
-    
-    Object.defineProperty(window, 'localStorage', {
-      value: mockLocalStorage,
-      writable: true,
-    });
-    Object.defineProperty(window, 'sessionStorage', {
-      value: mockSessionStorage,
-      writable: true,
-    });
-
-    // 设置mock函数的返回值
-    const { useState, useEffect, useCallback } = await import('react');
-    
-    // Mock useState to return different values based on input
-    let currentValue: any;
-    let setValueRef: any;
-    (useState as any).mockImplementation((initialValue: any) => {
-      // 如果initialValue是函数，调用它来获取实际值
-      currentValue = typeof initialValue === 'function' ? initialValue() : initialValue;
-      setValueRef = vi.fn((newValue: any) => {
-        if (typeof newValue === 'function') {
-          currentValue = newValue(currentValue);
-        } else {
-          currentValue = newValue;
-        }
-      });
-      return [currentValue, setValueRef];
-    });
-    
-    (useEffect as any).mockImplementation((fn: any) => fn());
-    (useCallback as any).mockImplementation((fn: any) => fn);
+  beforeEach(() => {
+    mocked = installMockStorage();
+    silenceConsoleError();
   });
 
   afterEach(() => {
-    vi.clearAllMocks();
+    clearStorageManagerRegistry();
+    restoreStorage();
+    vi.restoreAllMocks();
   });
 
-  describe('useReactStorage', () => {
-    it('should initialize with initial value', () => {
-      const { result } = renderHook(() => 
-        useReactStorage('test-key', { name: 'John' })
-      );
+  it('存储为空时使用初始值', () => {
+    const { result } = renderHook(() => useReactStorage('profile', { name: 'John' }));
+    expect(result.current[0]).toEqual({ name: 'John' });
+  });
 
-      expect(result.current[0]).toEqual({ name: 'John' });
+  it('读取已有数据', () => {
+    mocked.local.storage.setItem('profile', JSON.stringify({ name: 'Jane' }));
+    const { result } = renderHook(() => useReactStorage('profile', { name: 'John' }));
+    expect(result.current[0]).toEqual({ name: 'Jane' });
+  });
+
+  it('写入并同步到存储', () => {
+    const { result } = renderHook(() => useReactStorage('profile', { name: 'John' }));
+
+    act(() => {
+      result.current[1]({ name: 'Jane' });
     });
 
-    it('should load existing value from storage', () => {
-      mockLocalStorage.setItem('test-key', JSON.stringify({ name: 'Jane' }));
-      
-      const { result } = renderHook(() => 
-        useReactStorage('test-key', { name: 'John' })
-      );
+    expect(result.current[0]).toEqual({ name: 'Jane' });
+    expect(mocked.local.storage.getItem('profile')).toBe(JSON.stringify({ name: 'Jane' }));
+  });
 
-      expect(result.current[0]).toEqual({ name: 'Jane' });
+  it('支持函数式更新', () => {
+    const { result } = renderHook(() => useReactStorage('count', 0));
+
+    act(() => {
+      result.current[1]((prev) => prev + 1);
+      result.current[1]((prev) => prev + 1);
     });
 
-    it('should update value and storage', () => {
-      const { result } = renderHook(() => 
-        useReactStorage('test-key', { name: 'John' })
-      );
+    expect(result.current[0]).toBe(2);
+  });
 
-      // 测试setter函数是否存在
-      expect(typeof result.current[1]).toBe('function');
-      
-      // 测试调用setter函数
-      act(() => {
-        result.current[1]({ name: 'Jane' });
-      });
+  it('同标签页多组件共享实例并同步', () => {
+    const first = renderHook(() => useReactStorage('count', 0));
+    const second = renderHook(() => useReactStorage('count', 0));
 
-      // 验证localStorage被调用
-      expect(mockLocalStorage.setItem).toHaveBeenCalledWith('test-key', JSON.stringify({ name: 'Jane' }));
+    act(() => {
+      first.result.current[1](5);
     });
 
-    it('should use sessionStorage when specified', () => {
-      const { result } = renderHook(() => 
-        useReactStorage('test-key', { name: 'John' }, { storage: StoreType.SESSION })
-      );
+    expect(second.result.current[0]).toBe(5);
+  });
 
-      act(() => {
-        result.current[1]({ name: 'Jane' });
-      });
+  it('key 变化时重新读取', () => {
+    const { result, rerender } = renderHook(
+      ({ storageKey }: { storageKey: string }) => useReactStorage(storageKey, 'default'),
+      { initialProps: { storageKey: 'key-a' } },
+    );
 
-      expect(mockSessionStorage.setItem).toHaveBeenCalledWith('test-key', JSON.stringify({ name: 'Jane' }));
+    act(() => {
+      result.current[1]('A');
     });
 
-    it('should handle cross-tab synchronization', () => {
-      const { result } = renderHook(() => 
-        useReactStorage('test-key', { name: 'John' })
-      );
+    rerender({ storageKey: 'key-b' });
+    expect(result.current[0]).toBe('default');
 
-      // 测试hook是否正确初始化
-      expect(result.current[0]).toEqual({ name: 'John' });
-      expect(typeof result.current[1]).toBe('function');
+    rerender({ storageKey: 'key-a' });
+    expect(result.current[0]).toBe('A');
+  });
+
+  it('响应跨标签页 storage 事件', () => {
+    const { result } = renderHook(() => useReactStorage('count', 0));
+
+    act(() => {
+      mocked.local.storage.setItem('count', '5');
+      dispatchStorageEvent('count', '5');
     });
 
-    it('should ignore storage events for different keys', () => {
-      const { result } = renderHook(() => 
-        useReactStorage('test-key', { name: 'John' })
-      );
+    expect(result.current[0]).toBe(5);
+  });
 
-      // 测试hook是否正确初始化
-      expect(result.current[0]).toEqual({ name: 'John' });
-      expect(typeof result.current[1]).toBe('function');
+  it('外部清空存储时回落初始值', () => {
+    const { result } = renderHook(() => useReactStorage('count', 1));
+
+    act(() => {
+      result.current[1](9);
+    });
+    expect(result.current[0]).toBe(9);
+
+    act(() => {
+      dispatchStorageEvent(null, null);
     });
 
-    it('should handle invalid JSON gracefully', () => {
-      mockLocalStorage.setItem('test-key', 'invalid-json');
-      
-      const { result } = renderHook(() => 
-        useReactStorage('test-key', { name: 'John' })
-      );
+    expect(result.current[0]).toBe(1);
+  });
 
-      expect(result.current[0]).toEqual({ name: 'John' });
+  it('actions 提供 remove / clear', () => {
+    const { result } = renderHook(() => useReactStorage('count', 0));
+
+    act(() => {
+      result.current[1](3);
     });
 
-    it('should cleanup on unmount', () => {
-      const { unmount } = renderHook(() => 
-        useReactStorage('test-key', { name: 'John' })
-      );
-
-      // 测试unmount不会抛出错误
-      expect(() => unmount()).not.toThrow();
+    act(() => {
+      result.current[2].remove();
     });
+
+    expect(result.current[0]).toBe(0);
+    expect(mocked.local.storage.getItem('count')).toBeNull();
+  });
+
+  it('StrictMode 双挂载不丢数据', () => {
+    const { result } = renderHook(() => useReactStorage('strict', 0), {
+      wrapper: StrictMode,
+    });
+
+    act(() => {
+      result.current[1](2);
+    });
+
+    expect(result.current[0]).toBe(2);
+    expect(mocked.local.storage.getItem('strict')).toBe('2');
+  });
+
+  it('SSR renderToString 使用初始值', () => {
+    mocked.local.storage.setItem('ssr-key', JSON.stringify('stored'));
+
+    const App = () => {
+      const [value] = useReactStorage('ssr-key', 'initial');
+      return <span>{value}</span>;
+    };
+
+    expect(renderToString(<App />)).toContain('initial');
   });
 });

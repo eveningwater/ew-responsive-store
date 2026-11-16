@@ -2,13 +2,22 @@
 // 只包含Angular相关的依赖和功能
 
 // 导出核心功能
-export { StorageManager } from '../core/storage';
+export {
+  StorageManager,
+  getStorageManager,
+  getRegisteredManagers,
+  clearManagedStorage,
+  clearStorageManagerRegistry,
+} from '../core/storage';
 export { StoreType, ParseStrType } from '../core/types';
-export type { 
+export type {
+  ParseMode,
+  StorageErrorContext,
+  StorageUpdater,
   BaseStoreOptions,
   AngularStoreOptions,
   AngularStorageReturn,
-  IStorageManager
+  IStorageManager,
 } from '../core/types';
 
 export { parseStr, isValidJSON, isStorageEnabled } from '../core/utils';

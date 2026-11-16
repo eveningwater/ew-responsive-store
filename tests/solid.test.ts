@@ -1,140 +1,72 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { createRoot } from 'solid-js';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useSolidStorage } from '../src/export/solid';
-import { StoreType } from '../src/core/types';
-
-// Mock Solid.js
-vi.mock('solid-js', () => ({
-  createSignal: vi.fn(),
-  createEffect: vi.fn(),
-  onCleanup: vi.fn(),
-}));
-
-// 类型断言以支持 mock 方法
-const mockSolidJS = vi.mocked(await import('solid-js'));
-
-// Mock localStorage and sessionStorage
-const createMockStorage = () => {
-  let store: Record<string, string> = {};
-  return {
-    getItem: vi.fn((key: string) => store[key] || null),
-    setItem: vi.fn((key: string, value: string) => {
-      store[key] = value;
-    }),
-    removeItem: vi.fn((key: string) => {
-      delete store[key];
-    }),
-    clear: vi.fn(() => {
-      store = {};
-    }),
-    get length() {
-      return Object.keys(store).length;
-    },
-    key: vi.fn((index: number) => Object.keys(store)[index] || null),
-  };
-};
+import { clearStorageManagerRegistry, getStorageManager } from '../src/core/storage';
+import { installMockStorage, restoreStorage, silenceConsoleError } from './helpers';
 
 describe('Solid Adapter', () => {
-  let mockLocalStorage: ReturnType<typeof createMockStorage>;
-  let mockSessionStorage: ReturnType<typeof createMockStorage>;
-  let mockSignal: any;
-  let mockSetter: any;
+  let mocked: ReturnType<typeof installMockStorage>;
 
-  beforeEach(async () => {
-    mockLocalStorage = createMockStorage();
-    mockSessionStorage = createMockStorage();
-    
-    Object.defineProperty(window, 'localStorage', {
-      value: mockLocalStorage,
-      writable: true,
-    });
-    Object.defineProperty(window, 'sessionStorage', {
-      value: mockSessionStorage,
-      writable: true,
-    });
-
-    // Mock signal behavior
-    const mockSignal = vi.fn(() => ({ name: 'John' }));
-    const mockSetter = vi.fn();
-    mockSolidJS.createSignal.mockReturnValue([mockSignal, mockSetter]);
+  beforeEach(() => {
+    mocked = installMockStorage();
+    silenceConsoleError();
   });
 
   afterEach(() => {
-    vi.clearAllMocks();
+    clearStorageManagerRegistry();
+    restoreStorage();
+    vi.restoreAllMocks();
   });
 
-  describe('useSolidStorage', () => {
-    it('should create signal with initial value', async () => {
-      useSolidStorage('test-key', { name: 'John' });
-      
-      expect(mockSolidJS.createSignal).toHaveBeenCalledWith({ name: 'John' });
-    });
+  it('返回 signal 并写入存储', () => {
+    createRoot((dispose) => {
+      const [value, setValue] = useSolidStorage('count', 0);
 
-    it('should load existing value from storage', async () => {
-      mockLocalStorage.setItem('test-key', JSON.stringify({ name: 'Jane' }));
-      
-      useSolidStorage('test-key', { name: 'John' });
-      
-      expect((await import('solid-js')).createSignal).toHaveBeenCalledWith({ name: 'Jane' });
-    });
+      expect(value()).toBe(0);
+      setValue(2);
+      expect(value()).toBe(2);
+      expect(mocked.local.storage.getItem('count')).toBe('2');
 
-    it('should set up effect for value changes', async () => {
-      useSolidStorage('test-key', { name: 'John' });
-      
-      expect(mockSolidJS.createEffect).toHaveBeenCalled();
-    });
-
-    it('should use sessionStorage when specified', async () => {
-      useSolidStorage('test-key', { name: 'John' }, { storage: StoreType.SESSION });
-      
-      expect(mockSolidJS.createSignal).toHaveBeenCalledWith({ name: 'John' });
-    });
-
-    it('should set up cleanup on unmount', async () => {
-      useSolidStorage('test-key', { name: 'John' });
-      
-      expect(mockSolidJS.onCleanup).toHaveBeenCalled();
-    });
-
-    it('should return signal and setter', async () => {
-      const result = useSolidStorage('test-key', { name: 'John' });
-      
-      expect(result).toEqual([mockSolidJS.createSignal.mock.results[0].value[0], mockSolidJS.createSignal.mock.results[0].value[1]]);
-    });
-
-    it('should handle invalid JSON gracefully', async () => {
-      mockLocalStorage.setItem('test-key', 'invalid-json');
-      
-      useSolidStorage('test-key', { name: 'John' });
-      
-      expect(mockSolidJS.createSignal).toHaveBeenCalledWith({ name: 'John' });
+      dispose();
     });
   });
 
-  describe('Signal integration', () => {
-    it('should sync value changes to storage', async () => {
-      let effectCallback: Function;
-      mockSolidJS.createEffect.mockImplementation((callback) => {
-        effectCallback = callback;
-      });
-      
-      useSolidStorage('test-key', { name: 'John' });
-      
-      // Simulate value change
-      effectCallback!();
-      
-      expect(mockLocalStorage.setItem).toHaveBeenCalledWith('test-key', JSON.stringify({ name: 'John' }));
-    });
-
-    it('should sync storage changes to signal', async () => {
-      // 简化测试，只验证函数能正常调用
-      expect(() => useSolidStorage('test-key', { name: 'John' })).not.toThrow();
+  it('支持函数式更新', () => {
+    createRoot((dispose) => {
+      const [value, setValue] = useSolidStorage('count', 0);
+      setValue((prev) => prev + 1);
+      expect(value()).toBe(1);
+      dispose();
     });
   });
 
-  describe('Cleanup', () => {
-    it('should cleanup storage manager on unmount', async () => {
-      // 简化测试，只验证函数能正常调用
-      expect(() => useSolidStorage('test-key', { name: 'John' })).not.toThrow();
+  it('外部管理器更新时同步 signal', () => {
+    createRoot((dispose) => {
+      const [value] = useSolidStorage('count', 0);
+      getStorageManager('count', 0).setValue(5);
+      expect(value()).toBe(5);
+      dispose();
     });
+  });
+
+  it('读取已有数据', () => {
+    mocked.local.storage.setItem('profile', JSON.stringify({ name: 'Jane' }));
+    createRoot((dispose) => {
+      const [value] = useSolidStorage('profile', { name: 'John' });
+      expect(value()).toEqual({ name: 'Jane' });
+      dispose();
+    });
+  });
+
+  it('卸载后取消订阅', () => {
+    let read: () => number = () => 0;
+    createRoot((dispose) => {
+      const [value] = useSolidStorage('count', 0);
+      read = value;
+      dispose();
+    });
+
+    getStorageManager('count', 0).setValue(9);
+    expect(read()).toBe(0);
   });
 });

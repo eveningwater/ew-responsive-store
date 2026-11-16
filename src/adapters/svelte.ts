@@ -1,37 +1,69 @@
-import { writable, type Writable } from 'svelte/store';
-import { StorageManager } from '../core/storage';
-import { StoreType, SvelteStoreOptions } from '../core/types';
+import type { Unsubscriber, Updater, Writable } from 'svelte/store';
+import { getStorageManager } from '../core/storage';
+import { SvelteStoreOptions, StorageUpdater } from '../core/types';
 
+export interface SvelteStorage<T> extends Writable<T> {
+  /** 删除当前 key，值回落初始值 */
+  remove(): void;
+  /** 清空由本库管理的 key */
+  clear(): void;
+  /** 取消底层订阅 */
+  destroy(): void;
+}
+
+/**
+ * Svelte 版 useStorage。
+ * 返回标准 store（支持 `$store` 自动订阅），并额外提供 remove / clear / destroy。
+ */
 export function useStorage<T>(
   key: string,
-  initialValue: T,
-  options: SvelteStoreOptions = {
-    storage: StoreType.LOCAL
-  }
-): Writable<T> {
-  const { storage = StoreType.LOCAL } = options;
-  
-  const storageManager = new StorageManager(key, initialValue, storage);
-  const initialData = storageManager.getValue();
-  
-  const store = writable<T>(initialData);
+  initialValue: T | (() => T),
+  options: SvelteStoreOptions<T> = {},
+): SvelteStorage<T> {
+  const manager = getStorageManager<T>(key, initialValue, options);
 
-  // 监听store变化并同步到storage
-  store.subscribe((value) => {
-    storageManager.setValue(value);
-  });
+  const subscribers = new Set<(value: T) => void>();
+  let unsubscribeManager: Unsubscriber | null = null;
 
-  // 监听storage变化（跨标签页同步）
-  const unsubscribe = storageManager.subscribe((newValue) => {
-    store.set(newValue);
-  });
+  const start = () => {
+    if (subscribers.size !== 1) return;
+    unsubscribeManager = manager.subscribe((next) => {
+      subscribers.forEach((listener) => listener(next));
+    });
+  };
 
-  // 返回增强的store，包含清理方法
+  const stop = () => {
+    if (subscribers.size !== 0) return;
+    unsubscribeManager?.();
+    unsubscribeManager = null;
+  };
+
   return {
-    ...store,
-    destroy: () => {
-      unsubscribe();
-      storageManager.destroy();
-    }
-  } as Writable<T> & { destroy: () => void };
+    subscribe(run, _invalidate) {
+      subscribers.add(run);
+      start();
+      run(manager.getSnapshot());
+      return () => {
+        subscribers.delete(run);
+        stop();
+      };
+    },
+    set(value: T) {
+      manager.setValue(value);
+    },
+    update(updater: Updater<T>) {
+      manager.setValue(updater as StorageUpdater<T>);
+    },
+    remove() {
+      manager.remove();
+    },
+    clear() {
+      manager.clear();
+    },
+    destroy() {
+      subscribers.clear();
+      unsubscribeManager?.();
+      unsubscribeManager = null;
+    },
+  };
 }

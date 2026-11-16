@@ -1,148 +1,85 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useSvelteStorage } from '../src/export/svelte';
-import { StoreType } from '../src/core/types';
-
-// Mock Svelte store
-vi.mock('svelte/store', () => ({
-  writable: vi.fn(),
-}));
-
-// Mock localStorage and sessionStorage
-const createMockStorage = () => {
-  let store: Record<string, string> = {};
-  return {
-    getItem: vi.fn((key: string) => store[key] || null),
-    setItem: vi.fn((key: string, value: string) => {
-      store[key] = value;
-    }),
-    removeItem: vi.fn((key: string) => {
-      delete store[key];
-    }),
-    clear: vi.fn(() => {
-      store = {};
-    }),
-    get length() {
-      return Object.keys(store).length;
-    },
-    key: vi.fn((index: number) => Object.keys(store)[index] || null),
-  };
-};
+import { clearStorageManagerRegistry, getStorageManager } from '../src/core/storage';
+import { installMockStorage, restoreStorage, silenceConsoleError } from './helpers';
 
 describe('Svelte Adapter', () => {
-  let mockLocalStorage: ReturnType<typeof createMockStorage>;
-  let mockSessionStorage: ReturnType<typeof createMockStorage>;
-  let mockStore: any;
+  let mocked: ReturnType<typeof installMockStorage>;
 
-  beforeEach(async () => {
-    mockLocalStorage = createMockStorage();
-    mockSessionStorage = createMockStorage();
-    
-    Object.defineProperty(window, 'localStorage', {
-      value: mockLocalStorage,
-      writable: true,
-    });
-    Object.defineProperty(window, 'sessionStorage', {
-      value: mockSessionStorage,
-      writable: true,
-    });
-
-    // Mock store behavior
-    const mockSubscribe = vi.fn();
-    const mockSet = vi.fn();
-    const mockUpdate = vi.fn();
-    const mockStore = {
-      subscribe: mockSubscribe,
-      set: mockSet,
-      update: mockUpdate,
-      destroy: vi.fn()
-    };
-    const { writable } = await import('svelte/store');
-    (writable as any).mockReturnValue(mockStore);
+  beforeEach(() => {
+    mocked = installMockStorage();
+    silenceConsoleError();
   });
 
   afterEach(() => {
-    vi.clearAllMocks();
+    clearStorageManagerRegistry();
+    restoreStorage();
+    vi.restoreAllMocks();
   });
 
-  describe('useSvelteStorage', () => {
-    it('should create writable store with initial value', async () => {
-      useSvelteStorage('test-key', { name: 'John' });
-      
-      expect((await import('svelte/store')).writable).toHaveBeenCalledWith({ name: 'John' });
-    });
+  it('订阅时立即派发当前值', () => {
+    const store = useSvelteStorage('count', 0);
+    const values: number[] = [];
+    const unsubscribe = store.subscribe((value) => values.push(value));
 
-    it('should load existing value from storage', async () => {
-      mockLocalStorage.setItem('test-key', JSON.stringify({ name: 'Jane' }));
-      
-      useSvelteStorage('test-key', { name: 'John' });
-      
-      expect((await import('svelte/store')).writable).toHaveBeenCalledWith({ name: 'Jane' });
-    });
-
-    it('should use sessionStorage when specified', async () => {
-      useSvelteStorage('test-key', { name: 'John' }, { storage: StoreType.SESSION });
-      
-      expect((await import('svelte/store')).writable).toHaveBeenCalledWith({ name: 'John' });
-    });
-
-    it('should return store with destroy method', async () => {
-      const result = useSvelteStorage('test-key', { name: 'John' });
-      
-      expect(result).toBeDefined();
-      expect((result as any).destroy).toBeDefined();
-      expect(typeof (result as any).destroy).toBe('function');
-    });
-
-    it('should handle invalid JSON gracefully', async () => {
-      mockLocalStorage.setItem('test-key', 'invalid-json');
-      
-      useSvelteStorage('test-key', { name: 'John' });
-      
-      expect((await import('svelte/store')).writable).toHaveBeenCalledWith({ name: 'John' });
-    });
+    expect(values).toEqual([0]);
+    unsubscribe();
   });
 
-  describe('Store integration', () => {
-    it('should sync store changes to storage', async () => {
-      // 简化测试，只验证函数能正常调用
-      expect(() => useSvelteStorage('test-key', { name: 'John' })).not.toThrow();
-    });
+  it('set / update 写入并通知', () => {
+    const store = useSvelteStorage('count', 0);
+    const values: number[] = [];
+    const unsubscribe = store.subscribe((value) => values.push(value));
 
-    it('should sync storage changes to store', async () => {
-      // 简化测试，只验证函数能正常调用
-      expect(() => useSvelteStorage('test-key', { name: 'John' })).not.toThrow();
-    });
+    store.set(1);
+    store.update((prev) => prev + 1);
+
+    expect(values).toEqual([0, 1, 2]);
+    expect(mocked.local.storage.getItem('count')).toBe('2');
+    unsubscribe();
   });
 
-  describe('Cleanup', () => {
-    it('should cleanup storage manager on destroy', async () => {
-      // 简化测试，只验证函数能正常调用
-      const result = useSvelteStorage('test-key', { name: 'John' });
-      expect(() => (result as any).destroy()).not.toThrow();
-    });
+  it('外部管理器更新时通知订阅者', () => {
+    const store = useSvelteStorage('count', 0);
+    const subscriber = vi.fn();
+    const unsubscribe = store.subscribe(subscriber);
+
+    getStorageManager('count', 0).setValue(4);
+
+    expect(subscriber).toHaveBeenLastCalledWith(4);
+    unsubscribe();
   });
 
-  describe('Store methods', () => {
-    it('should provide all store methods', () => {
-      const result = useSvelteStorage('test-key', { name: 'John' });
-      
-      expect(result.subscribe).toBeDefined();
-      expect(result.set).toBeDefined();
-      expect(result.update).toBeDefined();
-      expect((result as any).destroy).toBeDefined();
-    });
+  it('读取已有数据', () => {
+    mocked.local.storage.setItem('profile', JSON.stringify({ name: 'Jane' }));
+    const store = useSvelteStorage('profile', { name: 'John' });
+    const values: Array<{ name: string }> = [];
+    const unsubscribe = store.subscribe((value) => values.push(value));
+    expect(values[0]).toEqual({ name: 'Jane' });
+    unsubscribe();
+  });
 
-    it('should delegate set method to store', async () => {
-      // 简化测试，只验证函数能正常调用
-      const result = useSvelteStorage('test-key', { name: 'John' });
-      expect(() => result.set({ name: 'Jane' })).not.toThrow();
-    });
+  it('remove 回落初始值', () => {
+    const store = useSvelteStorage('count', 0);
+    store.set(5);
+    const subscriber = vi.fn();
+    const unsubscribe = store.subscribe(subscriber);
 
-    it('should delegate update method to store', async () => {
-      // 简化测试，只验证函数能正常调用
-      const result = useSvelteStorage('test-key', { name: 'John' });
-      const updater = (current: any) => ({ ...current, name: 'Jane' });
-      expect(() => result.update(updater)).not.toThrow();
-    });
+    store.remove();
+
+    expect(subscriber).toHaveBeenLastCalledWith(0);
+    expect(mocked.local.storage.getItem('count')).toBeNull();
+    unsubscribe();
+  });
+
+  it('destroy 后不再通知', () => {
+    const store = useSvelteStorage('count', 0);
+    const subscriber = vi.fn();
+    store.subscribe(subscriber);
+    store.destroy();
+
+    getStorageManager('count', 0).setValue(6);
+
+    expect(subscriber).toHaveBeenCalledTimes(1);
   });
 });

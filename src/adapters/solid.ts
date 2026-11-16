@@ -1,35 +1,41 @@
-import { createSignal, createEffect, onCleanup } from 'solid-js';
-import { StorageManager } from '../core/storage';
-import { StoreType, SolidStoreOptions, StorageReturn } from '../core/types';
+import { createSignal, onCleanup } from 'solid-js';
+import { getStorageManager } from '../core/storage';
+import {
+  SolidStoreOptions,
+  StorageActions,
+  StorageReturn,
+  StorageUpdater,
+} from '../core/types';
 
+/**
+ * Solid 版 useStorage，返回 `[signal, setValue, actions]`。
+ * 同 key 的所有组件共享同一个管理器实例。
+ */
 export function useStorage<T>(
   key: string,
-  initialValue: T,
-  options: SolidStoreOptions = {
-    storage: StoreType.LOCAL
-  }
+  initialValue: T | (() => T),
+  options: SolidStoreOptions<T> = {},
 ): StorageReturn<T> {
-  const { storage = StoreType.LOCAL } = options;
-  
-  const storageManager = new StorageManager(key, initialValue, storage);
-  
-  const [value, setValue] = createSignal<T>(storageManager.getValue());
+  const manager = getStorageManager<T>(key, initialValue, options);
 
-  // 监听value变化并同步到storage
-  createEffect(() => {
-    storageManager.setValue(value());
+  const [value, setSignal] = createSignal<T>(manager.getSnapshot(), {
+    equals: Object.is,
   });
 
-  // 监听storage变化（跨标签页同步）
-  const unsubscribe = storageManager.subscribe((newValue) => {
-    setValue(() => newValue);
+  const unsubscribe = manager.subscribe((next) => {
+    setSignal(() => next);
   });
 
-  // 组件卸载时清理
-  onCleanup(() => {
-    unsubscribe();
-    storageManager.destroy();
-  });
+  onCleanup(unsubscribe);
 
-  return [value, setValue] as unknown as StorageReturn<T>;
+  const setValue = (next: StorageUpdater<T>) => manager.setValue(next);
+
+  const actions: StorageActions<T> = {
+    key,
+    remove: () => manager.remove(),
+    clear: () => manager.clear(),
+    manager,
+  };
+
+  return [value, setValue, actions] as unknown as StorageReturn<T>;
 }

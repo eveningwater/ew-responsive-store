@@ -1,13 +1,18 @@
 [
   {
     "text": "指南",
-    "link": "/zh/guide/",
-    "activeMatch": "/zh/guide/"
+    "link": "/guide/",
+    "activeMatch": "/guide/"
   },
   {
     "text": "API",
-    "link": "/zh/api/",
-    "activeMatch": "/zh/api/"
+    "link": "/api/",
+    "activeMatch": "/api/"
+  },
+  {
+    "text": "更新日志",
+    "link": "/changelog",
+    "activeMatch": "/changelog"
   },
   {
     "text": "示例",

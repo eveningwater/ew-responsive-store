@@ -1,6 +1,17 @@
-export { StorageManager } from '../core/storage';
+export {
+  StorageManager,
+  getStorageManager,
+  getRegisteredManagers,
+  clearManagedStorage,
+  clearStorageManagerRegistry,
+} from '../core/storage';
 export { StoreType, ParseStrType } from '../core/types';
-export type { 
+export type {
+  ParseMode,
+  StorageErrorContext,
+  StorageErrorOperation,
+  StorageUpdater,
+  StorageActions,
   BaseStoreOptions,
   VueStoreOptions,
   ReactStoreOptions,
@@ -11,7 +22,7 @@ export type {
   VanillaStoreOptions,
   StorageReturn,
   AngularStorageReturn,
-  IStorageManager
+  IStorageManager,
 } from '../core/types';
 
 export { parseStr, isValidJSON, isStorageEnabled } from '../core/utils';

@@ -1,198 +1,68 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { usePreactStorage } from '../src/export/preact';
-import { StoreType } from '../src/core/types';
+import { clearStorageManagerRegistry, getStorageManager } from '../src/core/storage';
+import { installMockStorage, restoreStorage, silenceConsoleError } from './helpers';
 
-// Mock Preact
-vi.mock('preact', () => ({
-  useState: vi.fn(),
-  useEffect: vi.fn(),
-  useCallback: vi.fn(),
-}));
-
-// Mock Preact hooks module
+// preact/hooks 不提供 useSyncExternalStore，这里用最小实现验证适配器接线
 vi.mock('preact/hooks', () => ({
-  useState: vi.fn(),
-  useEffect: vi.fn(),
-  useCallback: vi.fn(),
+  useState: (initial: unknown) => {
+    let value = typeof initial === 'function' ? (initial as () => unknown)() : initial;
+    const setState = (next: unknown) => {
+      value = typeof next === 'function' ? (next as (prev: unknown) => unknown)(value) : next;
+    };
+    return [value, setState];
+  },
+  useEffect: (effect: () => unknown) => {
+    const cleanup = effect();
+    if (typeof cleanup === 'function') cleanup();
+  },
+  useMemo: (factory: () => unknown) => factory(),
+  useCallback: (callback: unknown) => callback,
 }));
-
-// Mock localStorage
-const createMockStorage = () => {
-  let store: Record<string, string> = {};
-  return {
-    getItem: vi.fn((key: string) => store[key] || null),
-    setItem: vi.fn((key: string, value: string) => {
-      store[key] = value;
-    }),
-    removeItem: vi.fn((key: string) => {
-      delete store[key];
-    }),
-    clear: vi.fn(() => {
-      store = {};
-    }),
-    get length() {
-      return Object.keys(store).length;
-    },
-    key: vi.fn((index: number) => Object.keys(store)[index] || null),
-  };
-};
 
 describe('Preact Adapter', () => {
-  let mockLocalStorage: ReturnType<typeof createMockStorage>;
-  let mockSessionStorage: ReturnType<typeof createMockStorage>;
+  let mocked: ReturnType<typeof installMockStorage>;
 
-  beforeEach(async () => {
-    mockLocalStorage = createMockStorage();
-    mockSessionStorage = createMockStorage();
-    
-    Object.defineProperty(window, 'localStorage', {
-      value: mockLocalStorage,
-      writable: true,
-    });
-    Object.defineProperty(window, 'sessionStorage', {
-      value: mockSessionStorage,
-      writable: true,
-    });
-
-    // 设置mock函数的返回值
-    const { useState, useEffect, useCallback } = await import('preact/hooks');
-    
-    // Mock useState to return different values based on input
-    let currentValue: any;
-    let setValueRef: any;
-    (useState as any).mockImplementation((initialValue: any) => {
-      // 如果initialValue是函数，调用它来获取实际值
-      currentValue = typeof initialValue === 'function' ? initialValue() : initialValue;
-      setValueRef = vi.fn((newValue: any) => {
-        if (typeof newValue === 'function') {
-          currentValue = newValue(currentValue);
-        } else {
-          currentValue = newValue;
-        }
-        // 重新渲染hook以获取新值
-        if (setValueRef && setValueRef.mock) {
-          setValueRef.mock.calls.forEach(() => {
-            // 触发重新渲染
-          });
-        }
-      });
-      return [currentValue, setValueRef];
-    });
-    
-    (useEffect as any).mockImplementation((fn: any) => fn());
-    (useCallback as any).mockImplementation((fn: any) => fn);
+  beforeEach(() => {
+    mocked = installMockStorage();
+    silenceConsoleError();
   });
 
   afterEach(() => {
-    vi.clearAllMocks();
+    clearStorageManagerRegistry();
+    restoreStorage();
+    vi.restoreAllMocks();
   });
 
-  describe('usePreactStorage', () => {
-    it('should initialize with initial value', () => {
-      const { result } = renderHook(() => 
-        usePreactStorage('test-key', { name: 'John' })
-      );
+  it('返回 [value, setValue, actions]', () => {
+    const result = usePreactStorage('count', 0);
+    expect(result[0]).toBe(0);
+    expect(typeof result[1]).toBe('function');
+    expect(result[2].key).toBe('count');
+  });
 
-      expect(result.current[0]).toEqual({ name: 'John' });
-    });
+  it('写入并同步到存储', () => {
+    const [, setValue] = usePreactStorage('count', 0);
+    setValue(3);
+    expect(mocked.local.storage.getItem('count')).toBe('3');
+  });
 
-    it('should load existing value from storage', () => {
-      mockLocalStorage.setItem('test-key', JSON.stringify({ name: 'Jane' }));
-      
-      const { result } = renderHook(() => 
-        usePreactStorage('test-key', { name: 'John' })
-      );
+  it('支持函数式更新', () => {
+    usePreactStorage('count', 0);
+    getStorageManager('count', 0).setValue((prev) => prev + 4);
+    expect(getStorageManager('count', 0).getSnapshot()).toBe(4);
+  });
 
-      expect(result.current[0]).toEqual({ name: 'Jane' });
-    });
+  it('actions.remove 删除 key', () => {
+    const [, setValue, actions] = usePreactStorage('count', 0);
+    setValue(1);
+    actions.remove();
+    expect(mocked.local.storage.getItem('count')).toBeNull();
+  });
 
-    it('should update value and storage', () => {
-      const { result } = renderHook(() => 
-        usePreactStorage('test-key', { name: 'John' })
-      );
-
-      // 测试setter函数是否存在
-      expect(typeof result.current[1]).toBe('function');
-      
-      // 测试调用setter函数
-      act(() => {
-        result.current[1]({ name: 'Jane' });
-      });
-
-      // 验证localStorage被调用
-      expect(mockLocalStorage.setItem).toHaveBeenCalledWith('test-key', JSON.stringify({ name: 'Jane' }));
-    });
-
-    it('should use sessionStorage when specified', () => {
-      const { result } = renderHook(() => 
-        usePreactStorage('test-key', { name: 'John' }, { storage: StoreType.SESSION })
-      );
-
-      act(() => {
-        result.current[1]({ name: 'Jane' });
-      });
-
-      expect(mockSessionStorage.setItem).toHaveBeenCalledWith('test-key', JSON.stringify({ name: 'Jane' }));
-    });
-
-    it('should handle cross-tab synchronization', () => {
-      const { result } = renderHook(() => 
-        usePreactStorage('test-key', { name: 'John' })
-      );
-
-      // 测试hook是否正确初始化
-      expect(result.current[0]).toEqual({ name: 'John' });
-      expect(typeof result.current[1]).toBe('function');
-    });
-
-    it('should ignore storage events for different keys', () => {
-      const { result } = renderHook(() => 
-        usePreactStorage('test-key', { name: 'John' })
-      );
-
-      act(() => {
-        // 直接调用storageManager的订阅回调来模拟跨标签页同步
-        const storageManager = (result.current as any).__storageManager;
-        if (storageManager && storageManager.subscribe) {
-          const subscribers = (storageManager as any).subscribers || [];
-          subscribers.forEach((callback: any) => {
-            callback({ name: 'Jane' });
-          });
-        }
-      });
-
-      expect(result.current[0]).toEqual({ name: 'John' });
-    });
-
-    it('should handle invalid JSON gracefully', () => {
-      mockLocalStorage.setItem('test-key', 'invalid-json');
-      
-      const { result } = renderHook(() => 
-        usePreactStorage('test-key', { name: 'John' })
-      );
-
-      expect(result.current[0]).toEqual({ name: 'John' });
-    });
-
-    it('should cleanup on unmount', () => {
-      const { unmount } = renderHook(() => 
-        usePreactStorage('test-key', { name: 'John' })
-      );
-
-      // 测试unmount不会抛出错误
-      expect(() => unmount()).not.toThrow();
-    });
-
-    it('should return tuple with value and setter', () => {
-      const { result } = renderHook(() => 
-        usePreactStorage('test-key', { name: 'John' })
-      );
-
-      expect(Array.isArray(result.current)).toBe(true);
-      expect(result.current).toHaveLength(2);
-      expect(typeof result.current[0]).toBe('object');
-      expect(typeof result.current[1]).toBe('function');
-    });
+  it('读取已有数据', () => {
+    mocked.local.storage.setItem('profile', JSON.stringify({ name: 'Jane' }));
+    const [value] = usePreactStorage('profile', { name: 'John' });
+    expect(value).toEqual({ name: 'Jane' });
   });
 });

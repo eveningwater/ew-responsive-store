@@ -2,15 +2,28 @@
 
 # `ew-responsive-store` Making Session Storage Data Reactive
 
-If your project requires using session storage (either `localStorage` or `sessionStorage`) to persist data, and you want the data to be retained after a page refresh while also automatically updating the view when the data changes, I highly recommend using the `ew-responsive-store` library. It's under 1 KB in size and extremely easy to use. With just a single function call, you can make session storage data reactive, which can be applied to any framework-based project, even native JavaScript projects. The library also includes comprehensive unit tests and type inference.
+If your project requires using session storage (either `localStorage` or `sessionStorage`) to persist data, and you want the data to be retained after a page refresh while also automatically updating the view when the data changes, I highly recommend using the `ew-responsive-store` library. It's about 3.5 KB gzipped and extremely easy to use. With just a single function call, you can make session storage data reactive, which can be applied to any framework-based project, even native JavaScript projects. The library also includes comprehensive unit tests and type inference.
 
-## ✨ New in v0.0.3
+## 📖 Documentation
+
+- **English docs**: <https://eveningwater.github.io/ew-responsive-store/en/>
+- **Chinese docs**: <https://ew-responsive-store.eveningwater.com/> (Alibaba Cloud ESA, faster in China)
+
+The docs cover installation, quick starts for every framework, the full API reference, the changelog, and live examples.
+
+## ✨ New in v0.0.4
 
 - **Multi-Framework Support**: Added support for React, Vue, Preact, Solid, Svelte, Angular, and Vanilla JS
 - **Framework-Specific Entry Points**: Each framework has its own optimized entry point (e.g., `ew-responsive-store/react`, `ew-responsive-store/vue`)
-- **Zero External Dependencies**: Framework dependencies are treated as external, reducing bundle size
-- **Improved TypeScript Support**: Enhanced type definitions for all supported frameworks
-- **Better Testing Coverage**: Comprehensive unit tests for all framework adapters
+- **Same-tab Sync**: All components using the same `key` share one manager instance
+- **Legacy Raw Strings**: New `parse: 'auto'` keeps `'dark'` / `'1'` readable as strings
+- **SSR & Privacy-mode Safe**: Falls back to in-memory storage when `window` is missing or `setItem` throws
+- **Functional Updates**: `setValue(prev => next)`, same as React `useState`
+- **Versioned Migration**: `version` + `migrate(oldValue, oldVersion)`
+- **Remove / Clear**: `remove()` and `clear()` (only clears keys owned by this library)
+- **Custom Serialization**: `serializer` / `deserializer` for `Date`, `Map`, `Set`, etc.
+- **React 18+**: React adapter now uses `useSyncExternalStore`
+- **Zero Runtime Dependencies**: Required utilities are inlined at build time
 
 ## ✨ Previous Features (v0.0.1-beta.8)
 
@@ -359,7 +372,7 @@ export default TodoApp;
 
 #### Cross-tab Synchronization
 
-`useReactStorage` automatically synchronizes data across browser tabs:
+`useStorage` automatically synchronizes data across browser tabs:
 
 ```tsx
 import React from 'react';

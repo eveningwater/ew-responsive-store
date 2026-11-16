@@ -1,11 +1,14 @@
 import { defineConfig } from "rspress/config";
 
+// GitHub Pages 部署在子路径，阿里云 ESA 部署在独立域名根路径
+const base = process.env.DOCS_BASE || "/ew-responsive-store/";
+
 export default defineConfig({
   root: "./",
   title: "ew-responsive-store",
   description: "Making Session Storage Data Reactive",
   outDir: "ew-responsive-store",
-  base: "/ew-responsive-store/",
+  base,
   icon: "/favicon.svg",
   logo: "/logo.svg",
   lang: "zh",

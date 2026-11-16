@@ -1,42 +1,69 @@
-import { ref, watch } from '@vue/reactivity';
-import { StorageManager } from '../core/storage';
+import { getCurrentScope, onScopeDispose, ref, watch, type Ref } from '@vue/reactivity';
+import { getStorageManager } from '../core/storage';
 import { StoreType, VueStoreOptions } from '../core/types';
 
+/**
+ * Vue 版 useStorage。
+ *
+ * - 同 key 的所有组件共享同一个管理器实例
+ * - `deep`：是否深度监听对象内部变化（默认 true）
+ * - `immediate`：是否在创建时立即把当前值写回存储（默认 false，值已经由存储初始化）
+ * - 其余选项会透传给 Vue 的 `watch`
+ */
 export function useStorage<T>(
   key: string,
-  initialValue: T,
-  options: VueStoreOptions = {
-    storage: StoreType.LOCAL,
-    immediate: true,
-    deep: true
-  }
-) {
-  const { storage = StoreType.LOCAL, immediate = true, deep = true, ...rest } = options;
-  
-  const storageManager = new StorageManager(key, initialValue, storage);
-  const value = ref<T>(storageManager.getValue());
+  initialValue: T | (() => T),
+  options: VueStoreOptions<T> = {},
+): Ref<T> {
+  const {
+    storage = StoreType.LOCAL,
+    immediate = false,
+    deep = true,
+    parse,
+    serializer,
+    deserializer,
+    version,
+    migrate,
+    equals,
+    memoryFallback,
+    onError,
+    ...watchOptions
+  } = options;
 
-  // 监听value变化并同步到storage
-  watch(value, (newValue) => {
-    storageManager.setValue(newValue);
-  }, { immediate, deep, ...rest });
-
-  // 监听storage变化（跨标签页同步）
-  const unsubscribe = storageManager.subscribe((newValue) => {
-    value.value = newValue;
+  const manager = getStorageManager<T>(key, initialValue, {
+    storage,
+    parse,
+    serializer,
+    deserializer,
+    version,
+    migrate,
+    equals,
+    memoryFallback,
+    onError,
   });
 
-  // 注意：在Vue 3 Composition API中，清理逻辑需要在setup函数中处理
-  // 这里我们返回一个包含清理方法的对象
-  const cleanup = () => {
-    unsubscribe();
-    storageManager.destroy();
-  };
+  const value = ref<T>(manager.getSnapshot()) as Ref<T>;
 
-  // 为Vue组件提供清理方法
-  if (typeof window !== 'undefined' && (window as any).__VUE_DEVTOOLS_GLOBAL_HOOK__) {
-    // 在开发环境中，可以通过Vue DevTools进行清理
-    (value as any).__cleanup = cleanup;
+  if (immediate) {
+    manager.setValue(value.value);
+  }
+
+  const stopWatch = watch(
+    value,
+    (next) => manager.setValue(next as T),
+    { deep, ...watchOptions },
+  );
+
+  const unsubscribe = manager.subscribe((next) => {
+    if (Object.is(value.value, next)) return;
+    value.value = next;
+  });
+
+  if (getCurrentScope()) {
+    onScopeDispose(() => {
+      stopWatch();
+      unsubscribe();
+    });
   }
 
   return value;

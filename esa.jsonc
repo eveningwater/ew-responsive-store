@@ -1,0 +1,9 @@
+{
+  "name": "ew-responsive-store-docs",
+  "installCommand": "cd docs && pnpm install --no-frozen-lockfile",
+  "buildCommand": "cd docs && DOCS_BASE=/ pnpm run docs:build",
+  "assets": {
+    "directory": "./docs/ew-responsive-store",
+    "notFoundStrategy": "404Page"
+  }
+}

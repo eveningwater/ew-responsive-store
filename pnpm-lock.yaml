@@ -7,14 +7,13 @@ settings:
 importers:
 
   .:
-    dependencies:
-      react:
-        specifier: '>=16.8.0'
-        version: 19.1.1
     devDependencies:
       '@angular/core':
         specifier: ^17.0.0
         version: 17.3.12(rxjs@7.8.2)(zone.js@0.14.10)
+      '@ew-color-picker/utils':
+        specifier: 2.0.5
+        version: 2.0.5
       '@testing-library/react':
         specifier: ^16.3.0
         version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@18.3.24)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
@@ -42,6 +41,12 @@ importers:
       preact:
         specifier: ^10.0.0
         version: 10.27.2
+      react:
+        specifier: 19.1.1
+        version: 19.1.1
+      react-dom:
+        specifier: 19.1.1
+        version: 19.1.1(react@19.1.1)
       solid-js:
         specifier: ^1.0.0
         version: 1.9.9
@@ -322,6 +327,14 @@ packages:
     engines: {node: '>=12'}
     cpu: [x64]
     os: [win32]
+
+  '@ew-color-picker/utils@2.0.5':
+    resolution: {integrity: sha512-njVaDB9eFu7nklA79trHqZ/fPVV7PwJvD1evnd25CYlb5Rzyt2ym7YbtIKpsiAwdB1/YntElKzUrsvp7G7ohqg==}
+    peerDependencies:
+      '@ew-color-picker/core': ^2.0.5
+    peerDependenciesMeta:
+      '@ew-color-picker/core':
+        optional: true
 
   '@jridgewell/gen-mapping@0.3.13':
     resolution: {integrity: sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==}
@@ -961,6 +974,7 @@ packages:
   whatwg-encoding@3.1.1:
     resolution: {integrity: sha512-6qN4hJdMwfYBtE3YBTTHhoeuUrDBPZmbQaxWAqSALV/MeEnR5z1xd8UKud2RAkFoPkmB+hli1TZSnyi84xz1vQ==}
     engines: {node: '>=18'}
+    deprecated: Use @exodus/bytes instead for a more spec-conformant and faster implementation
 
   whatwg-mimetype@4.0.0:
     resolution: {integrity: sha512-QaKxh0eNIi2mE9p2vEdzfagOKHCcj1pJ56EEHGQOVxp8r9/iszLUUV7v89x9O1p/T+NlTM5W7jW6+cz4Fq1YVg==}
@@ -1218,6 +1232,8 @@ snapshots:
 
   '@esbuild/win32-x64@0.21.5':
     optional: true
+
+  '@ew-color-picker/utils@2.0.5': {}
 
   '@jridgewell/gen-mapping@0.3.13':
     dependencies:

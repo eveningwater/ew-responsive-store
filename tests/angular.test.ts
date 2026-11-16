@@ -1,185 +1,94 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { useAngularStorage, StorageService } from '../src/export/angular';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { StorageService } from '../src/export/angular';
+import { clearStorageManagerRegistry } from '../src/core/storage';
 import { StoreType } from '../src/core/types';
+import { installMockStorage, restoreStorage, silenceConsoleError } from './helpers';
 
-// Mock Angular core
-vi.mock('@angular/core', () => ({
-  Injectable: vi.fn(),
-  signal: vi.fn(),
-  computed: vi.fn(),
-  effect: vi.fn(),
-  inject: vi.fn(),
-  DestroyRef: vi.fn(),
-}));
-
-// Mock localStorage and sessionStorage
-const createMockStorage = () => {
-  let store: Record<string, string> = {};
-  return {
-    getItem: vi.fn((key: string) => store[key] || null),
-    setItem: vi.fn((key: string, value: string) => {
-      store[key] = value;
-    }),
-    removeItem: vi.fn((key: string) => {
-      delete store[key];
-    }),
-    clear: vi.fn(() => {
-      store = {};
-    }),
-    get length() {
-      return Object.keys(store).length;
-    },
-    key: vi.fn((index: number) => Object.keys(store)[index] || null),
+vi.mock('@angular/core', () => {
+  const signal = (initial: unknown) => {
+    let value = initial;
+    const read = (() => value) as any;
+    read.set = (next: unknown) => {
+      value = next;
+    };
+    read.update = (updater: (prev: unknown) => unknown) => {
+      value = updater(value);
+    };
+    return read;
   };
-};
+
+  return {
+    signal,
+    computed: (fn: () => unknown) => fn,
+    inject: () => ({ onDestroy: () => {} }),
+    DestroyRef: class DestroyRef {},
+    Injectable: () => (target: unknown) => target,
+  };
+});
 
 describe('Angular Adapter', () => {
-  let mockLocalStorage: ReturnType<typeof createMockStorage>;
-  let mockSessionStorage: ReturnType<typeof createMockStorage>;
-  let mockAngularCore: any;
+  let mocked: ReturnType<typeof installMockStorage>;
 
   beforeEach(() => {
-    mockLocalStorage = createMockStorage();
-    mockSessionStorage = createMockStorage();
-    
-    Object.defineProperty(window, 'localStorage', {
-      value: mockLocalStorage,
-      writable: true,
-    });
-    Object.defineProperty(window, 'sessionStorage', {
-      value: mockSessionStorage,
-      writable: true,
-    });
-
-    // Mock Angular core availability
-    mockAngularCore = {
-      Injectable: true,
-      signal: vi.fn(),
-      computed: vi.fn(),
-      effect: vi.fn(),
-      inject: vi.fn(),
-      DestroyRef: vi.fn()
-    };
-
-    // Mock global require
-    (globalThis as any).require = vi.fn(() => mockAngularCore);
-    
-    // Mock signal behavior
-    const mockSignalValue = {
-      set: vi.fn(),
-      update: vi.fn()
-    };
-    mockAngularCore.signal.mockReturnValue(mockSignalValue);
-    mockAngularCore.computed.mockReturnValue(() => ({ name: 'John' }));
-    const mockDestroyRef = {
-      onDestroy: vi.fn()
-    };
-    mockAngularCore.inject.mockReturnValue(mockDestroyRef);
+    mocked = installMockStorage();
+    silenceConsoleError();
   });
 
   afterEach(() => {
-    vi.clearAllMocks();
+    clearStorageManagerRegistry();
+    restoreStorage();
+    vi.restoreAllMocks();
   });
 
-  describe('StorageService', () => {
-    it('should create service instance', () => {
-      const service = new StorageService();
-      expect(service).toBeDefined();
-    });
-
-    it('should use storage manager for storage operations', () => {
-      const service = new StorageService();
-      const result = service.useStorage('test-key', { name: 'John' });
-      
-      expect(result).toBeDefined();
-      expect(result.value).toBeDefined();
-      expect(result.setValue).toBeDefined();
-      expect(result.updateValue).toBeDefined();
-      expect(result.reset).toBeDefined();
-    });
-
-    it('should reuse existing storage managers', () => {
-      const service = new StorageService();
-      const result1 = service.useStorage('test-key', { name: 'John' });
-      const result2 = service.useStorage('test-key', { name: 'John' });
-      
-      // 简化测试，只验证函数能正常调用
-      expect(result1).toBeDefined();
-      expect(result2).toBeDefined();
-    });
-
-    it('should create separate managers for different keys', () => {
-      const service = new StorageService();
-      const result1 = service.useStorage('key1', { name: 'John' });
-      const result2 = service.useStorage('key2', { name: 'John' });
-      
-      expect(result1).not.toBe(result2);
-    });
+  it('使用初始值', () => {
+    const service = new StorageService();
+    const state = service.useStorage('count', 0);
+    expect(state.value()).toBe(0);
   });
 
-  describe('useAngularStorage', () => {
-    it('should throw error when Angular is not available', () => {
-      // Mock Angular not available
-      (globalThis as any).require = vi.fn(() => null);
-      
-      expect(() => {
-        useAngularStorage('test-key', { name: 'John' });
-      }).toThrow('Angular is not available');
-    });
+  it('setValue 写入并同步 signal', () => {
+    const service = new StorageService();
+    const state = service.useStorage('count', 0);
 
-    it('should work when Angular is available', () => {
-      // 由于Angular不可用，这个测试应该抛出错误
-      expect(() => useAngularStorage('test-key', { name: 'John' })).toThrow('Angular is not available');
-    });
+    state.setValue(2);
+
+    expect(state.value()).toBe(2);
+    expect(mocked.local.storage.getItem('count')).toBe('2');
   });
 
-  describe('Angular integration', () => {
-    it('should create signal with initial value', () => {
-      const service = new StorageService();
-      const result = service.useStorage('test-key', { name: 'John' });
-      
-      expect(result).toBeDefined();
-      expect(result.value).toBeDefined();
-    });
+  it('updateValue 支持函数式更新', () => {
+    const service = new StorageService();
+    const state = service.useStorage('count', 0);
 
-    it('should set up effect for value changes', () => {
-      const service = new StorageService();
-      const result = service.useStorage('test-key', { name: 'John' });
-      
-      expect(result).toBeDefined();
-      expect(result.setValue).toBeDefined();
-    });
+    state.updateValue((prev) => prev + 3);
 
-    it('should set up computed for value access', () => {
-      const service = new StorageService();
-      const result = service.useStorage('test-key', { name: 'John' });
-      
-      expect(result).toBeDefined();
-      expect(result.updateValue).toBeDefined();
-    });
-
-    it('should set up cleanup on destroy', () => {
-      const service = new StorageService();
-      const result = service.useStorage('test-key', { name: 'John' });
-      
-      expect(result).toBeDefined();
-      expect(result.reset).toBeDefined();
-    });
+    expect(state.value()).toBe(3);
   });
 
-  describe('Fallback behavior', () => {
-    it('should provide fallback when Angular is not available', () => {
-      // Mock Angular not available
-      (globalThis as any).require = vi.fn(() => null);
-      
-      const service = new StorageService();
-      const result = service.useStorage('test-key', { name: 'John' });
-      
-      expect(result).toBeDefined();
-      expect(result.value).toBeDefined();
-      expect(result.setValue).toBeDefined();
-      expect(result.updateValue).toBeDefined();
-      expect(result.reset).toBeDefined();
-    });
+  it('reset / remove 回落初始值', () => {
+    const service = new StorageService();
+    const state = service.useStorage('count', 1);
+    state.setValue(9);
+
+    state.reset();
+
+    expect(state.value()).toBe(1);
+    expect(mocked.local.storage.getItem('count')).toBeNull();
+  });
+
+  it('读取已有数据', () => {
+    mocked.local.storage.setItem('profile', JSON.stringify({ name: 'Jane' }));
+    const service = new StorageService();
+    const state = service.useStorage('profile', { name: 'John' });
+    expect(state.value()).toEqual({ name: 'Jane' });
+  });
+
+  it('使用 sessionStorage', () => {
+    const service = new StorageService();
+    const state = service.useStorage('count', 0, { storage: StoreType.SESSION });
+    state.setValue(5);
+
+    expect(mocked.session.storage.getItem('count')).toBe('5');
+    expect(mocked.local.storage.getItem('count')).toBeNull();
   });
 });

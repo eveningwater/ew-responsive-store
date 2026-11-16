@@ -10,6 +10,11 @@
     "activeMatch": "/en/api/"
   },
   {
+    "text": "Changelog",
+    "link": "/en/changelog",
+    "activeMatch": "/en/changelog"
+  },
+  {
     "text": "Examples",
     "items": [
       {

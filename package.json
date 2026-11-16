@@ -1,45 +1,51 @@
 {
   "name": "ew-responsive-store",
-  "version": "0.0.3-beta.4",
+  "version": "0.0.4",
   "type": "module",
-  "main": "dist/index.umd.min.js",
+  "main": "dist/index.umd.min.cjs",
   "module": "dist/index.es.min.js",
   "typings": "./dist/export/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "README.CN.md"
+  ],
+  "sideEffects": false,
   "exports": {
     ".": {
+      "types": "./dist/export/index.d.ts",
       "import": "./dist/index.es.min.js",
-      "require": "./dist/index.umd.min.js",
-      "types": "./dist/export/index.d.ts"
+      "require": "./dist/index.umd.min.cjs"
     },
     "./react": {
+      "types": "./dist/export/react.d.ts",
       "import": "./dist/react.es.min.js",
-      "require": "./dist/react.umd.min.js",
-      "types": "./dist/export/react.d.ts"
+      "require": "./dist/react.umd.min.cjs"
     },
     "./vue": {
+      "types": "./dist/export/vue.d.ts",
       "import": "./dist/vue.es.min.js",
-      "require": "./dist/vue.umd.min.js",
-      "types": "./dist/export/vue.d.ts"
+      "require": "./dist/vue.umd.min.cjs"
     },
     "./preact": {
+      "types": "./dist/export/preact.d.ts",
       "import": "./dist/preact.es.min.js",
-      "require": "./dist/preact.umd.min.js",
-      "types": "./dist/export/preact.d.ts"
+      "require": "./dist/preact.umd.min.cjs"
     },
     "./solid": {
+      "types": "./dist/export/solid.d.ts",
       "import": "./dist/solid.es.min.js",
-      "require": "./dist/solid.umd.min.js",
-      "types": "./dist/export/solid.d.ts"
+      "require": "./dist/solid.umd.min.cjs"
     },
     "./svelte": {
+      "types": "./dist/export/svelte.d.ts",
       "import": "./dist/svelte.es.min.js",
-      "require": "./dist/svelte.umd.min.js",
-      "types": "./dist/export/svelte.d.ts"
+      "require": "./dist/svelte.umd.min.cjs"
     },
     "./angular": {
+      "types": "./dist/export/angular.d.ts",
       "import": "./dist/angular.es.min.js",
-      "require": "./dist/angular.umd.min.js",
-      "types": "./dist/export/angular.d.ts"
+      "require": "./dist/angular.umd.min.cjs"
     }
   },
   "repository": {
@@ -70,34 +76,37 @@
     "preview": "vite preview",
     "test": "vitest",
     "tsc": "tsc",
+    "prepublishOnly": "npm run build:all",
     "release": "npm publish --access public --registry=https://registry.npmjs.org",
     "release:docs": "cd docs && npm run release"
   },
   "devDependencies": {
+    "@angular/core": "^17.0.0",
+    "@ew-color-picker/utils": "2.0.5",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
     "@types/react": "^18.0.0",
     "@vitejs/plugin-react": "^5.0.2",
     "@vue/reactivity": "^3.5.13",
     "@vue/shared": "^3.5.13",
-    "ew-responsive-store": "0.0.3-beta.3",
     "jsdom": "^26.1.0",
     "preact": "^10.0.0",
+    "react": "19.1.1",
+    "react-dom": "19.1.1",
     "solid-js": "^1.0.0",
     "svelte": "^3.0.0",
-    "@angular/core": "^17.0.0",
     "typescript": "~5.6.2",
     "vite": "^5.4.19",
     "vitest": "^2.1.8"
   },
   "peerDependencies": {
-    "react": ">=16.8.0",
-    "preact": ">=10.0.0",
-    "solid-js": ">=1.0.0",
-    "svelte": ">=3.0.0",
     "@angular/core": ">=15.0.0",
     "@vue/reactivity": "^3.0.0",
-    "@vue/shared": "^3.0.0"
+    "@vue/shared": "^3.0.0",
+    "preact": ">=10.0.0",
+    "react": ">=18.0.0",
+    "solid-js": ">=1.0.0",
+    "svelte": ">=3.0.0"
   },
   "peerDependenciesMeta": {
     "react": {

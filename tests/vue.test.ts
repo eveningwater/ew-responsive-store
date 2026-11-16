@@ -1,134 +1,105 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { effectScope } from '@vue/reactivity';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useVueStorage } from '../src/export/vue';
+import { clearStorageManagerRegistry, getStorageManager } from '../src/core/storage';
 import { StoreType } from '../src/core/types';
-
-// Mock Vue reactivity
-vi.mock('@vue/reactivity', () => ({
-  ref: vi.fn(),
-  watch: vi.fn(),
-  onUnmounted: vi.fn(),
-}));
-
-// Mock localStorage and sessionStorage
-const createMockStorage = () => {
-  let store: Record<string, string> = {};
-  return {
-    getItem: vi.fn((key: string) => store[key] || null),
-    setItem: vi.fn((key: string, value: string) => {
-      store[key] = value;
-    }),
-    removeItem: vi.fn((key: string) => {
-      delete store[key];
-    }),
-    clear: vi.fn(() => {
-      store = {};
-    }),
-    get length() {
-      return Object.keys(store).length;
-    },
-    key: vi.fn((index: number) => Object.keys(store)[index] || null),
-  };
-};
+import { installMockStorage, restoreStorage, silenceConsoleError } from './helpers';
 
 describe('Vue Adapter', () => {
-  let mockLocalStorage: ReturnType<typeof createMockStorage>;
-  let mockSessionStorage: ReturnType<typeof createMockStorage>;
-  let mockValue: any;
+  let mocked: ReturnType<typeof installMockStorage>;
 
-  beforeEach(async () => {
-    mockLocalStorage = createMockStorage();
-    mockSessionStorage = createMockStorage();
-    
-    Object.defineProperty(window, 'localStorage', {
-      value: mockLocalStorage,
-      writable: true,
-    });
-    Object.defineProperty(window, 'sessionStorage', {
-      value: mockSessionStorage,
-      writable: true,
-    });
-
-    // Mock ref behavior
-    const mockValue = {
-      value: { name: 'John' }
-    };
-    const { ref, watch } = await import('@vue/reactivity');
-    (ref as any).mockReturnValue(mockValue);
-    (watch as any).mockImplementation((source: any, callback: any, options: any) => {
-      // Simulate immediate execution
-      if (options?.immediate) {
-        callback(mockValue.value);
-      }
-    });
+  beforeEach(() => {
+    mocked = installMockStorage();
+    silenceConsoleError();
   });
 
   afterEach(() => {
-    vi.clearAllMocks();
+    clearStorageManagerRegistry();
+    restoreStorage();
+    vi.restoreAllMocks();
   });
 
-  describe('useVueStorage', () => {
-    it('should create a ref with initial value', async () => {
-      useVueStorage('test-key', { name: 'John' });
-      
-      expect((await import('@vue/reactivity')).ref).toHaveBeenCalledWith({ name: 'John' });
-    });
+  it('使用初始值并同步写入存储', () => {
+    const scope = effectScope();
+    const value = scope.run(() => useVueStorage('count', 0, { flush: 'sync' }))!;
 
-    it('should load existing value from storage', async () => {
-      mockLocalStorage.setItem('test-key', JSON.stringify({ name: 'Jane' }));
-      
-      useVueStorage('test-key', { name: 'John' });
-      
-      expect((await import('@vue/reactivity')).ref).toHaveBeenCalledWith({ name: 'Jane' });
-    });
+    expect(value.value).toBe(0);
 
-    it('should set up watcher for value changes', async () => {
-      // 简化测试，只验证函数能正常调用
-      expect(() => useVueStorage('test-key', { name: 'John' })).not.toThrow();
-    });
+    value.value = 1;
+    expect(mocked.local.storage.getItem('count')).toBe('1');
 
-    it('should use sessionStorage when specified', async () => {
-      useVueStorage('test-key', { name: 'John' }, { storage: StoreType.SESSION });
-      
-      expect((await import('@vue/reactivity')).ref).toHaveBeenCalledWith({ name: 'John' });
-    });
-
-    it('should handle custom watch options', async () => {
-      // 简化测试，只验证函数能正常调用
-      expect(() => useVueStorage('test-key', { name: 'John' }, { 
-        immediate: false, 
-        deep: false 
-      })).not.toThrow();
-    });
-
-    it('should handle invalid JSON gracefully', async () => {
-      mockLocalStorage.setItem('test-key', 'invalid-json');
-      
-      useVueStorage('test-key', { name: 'John' });
-      
-      expect((await import('@vue/reactivity')).ref).toHaveBeenCalledWith({ name: 'John' });
-    });
-
-    it('should set up cleanup on unmount', async () => {
-      // 简化测试，只验证函数能正常调用
-      expect(() => useVueStorage('test-key', { name: 'John' })).not.toThrow();
-    });
-
-    it('should return reactive ref', async () => {
-      // 简化测试，只验证函数能正常调用并返回结果
-      const result = useVueStorage('test-key', { name: 'John' });
-      expect(result).toBeDefined();
-    });
+    scope.stop();
   });
 
-  describe('Storage synchronization', () => {
-    it('should sync value changes to storage', async () => {
-      // 简化测试，只验证函数能正常调用
-      expect(() => useVueStorage('test-key', { name: 'John' })).not.toThrow();
-    });
+  it('读取已有数据', () => {
+    mocked.local.storage.setItem('profile', JSON.stringify({ name: 'Jane' }));
+    const scope = effectScope();
+    const value = scope.run(() => useVueStorage('profile', { name: 'John' }))!;
+    expect(value.value).toEqual({ name: 'Jane' });
+    scope.stop();
+  });
 
-    it('should sync storage changes to value', async () => {
-      // 简化测试，只验证函数能正常调用
-      expect(() => useVueStorage('test-key', { name: 'John' })).not.toThrow();
-    });
+  it('外部管理器更新时同步 ref', () => {
+    const scope = effectScope();
+    const value = scope.run(() => useVueStorage('count', 0, { flush: 'sync' }))!;
+    const manager = getStorageManager('count', 0);
+
+    manager.setValue(7);
+    expect(value.value).toBe(7);
+
+    scope.stop();
+  });
+
+  it('deep 监听嵌套变更', () => {
+    const scope = effectScope();
+    const value = scope.run(() =>
+      useVueStorage('profile', { name: 'John', tags: [] as string[] }, { flush: 'sync' }),
+    )!;
+
+    value.value.tags.push('admin');
+
+    expect(mocked.local.storage.getItem('profile')).toBe(
+      JSON.stringify({ name: 'John', tags: ['admin'] }),
+    );
+
+    scope.stop();
+  });
+
+  it('deep 为 false 时不监听嵌套变更', () => {
+    const scope = effectScope();
+    const value = scope.run(() =>
+      useVueStorage('profile', { name: 'John', tags: [] as string[] }, { deep: false, flush: 'sync' }),
+    )!;
+
+    value.value.tags.push('admin');
+
+    expect(mocked.local.storage.getItem('profile')).toBeNull();
+
+    scope.stop();
+  });
+
+  it('作用域销毁后不再同步', () => {
+    const scope = effectScope();
+    const value = scope.run(() => useVueStorage('count', 0, { flush: 'sync' }))!;
+    scope.stop();
+
+    const manager = getStorageManager('count', 0);
+    manager.setValue(3);
+
+    expect(value.value).toBe(0);
+  });
+
+  it('使用 sessionStorage', () => {
+    const scope = effectScope();
+    const value = scope.run(() =>
+      useVueStorage('count', 0, { storage: StoreType.SESSION, flush: 'sync' }),
+    )!;
+
+    value.value = 2;
+
+    expect(mocked.session.storage.getItem('count')).toBe('2');
+    expect(mocked.local.storage.getItem('count')).toBeNull();
+
+    scope.stop();
   });
 });

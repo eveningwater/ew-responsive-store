@@ -2,19 +2,32 @@
 
 # `ew-responsive-store` 使用指南：让会话存储数据响应式化
 
-如果你的项目中需要使用会话存储（`localStorage` 或 `sessionStorage`）来保存数据，且希望这些数据在页面刷新后依然能保留，并且能够在数据变化时自动更新界面，那么我强烈推荐你使用 `ew-responsive-store` 这个库。它的体积不到 1 KB，简单易用，只需要调用一个方法就能将会话存储的数据变成响应式数据，可以广泛应用于各种框架的项目中，甚至是原生 JavaScript 项目，该库还具备完善的单元测试和类型推导。
+如果你的项目中需要使用会话存储（`localStorage` 或 `sessionStorage`）来保存数据，且希望这些数据在页面刷新后依然能保留，并且能够在数据变化时自动更新界面，那么我强烈推荐你使用 `ew-responsive-store` 这个库。它 gzip 后约 3.5 KB，简单易用，只需要调用一个方法就能将会话存储的数据变成响应式数据，可以广泛应用于各种框架的项目中，甚至是原生 JavaScript 项目，该库还具备完善的单元测试和类型推导。
 
-## ✨ v0.0.3 新特性
+## 📖 官方文档
+
+- **中文文档**：<https://ew-responsive-store.eveningwater.com/>（阿里云 ESA 加速，国内访问更快）
+- **English Docs**：<https://eveningwater.github.io/ew-responsive-store/en/>
+
+文档涵盖安装、各框架快速上手、完整 API 参考、更新日志与在线示例。
+
+## ✨ v0.0.4 新特性
 
 - **多框架支持**：新增对 React、Vue、Preact、Solid、Svelte、Angular 和原生 JavaScript 的支持
 - **框架专用入口**：每个框架都有独立的优化入口点（如 `ew-responsive-store/react`、`ew-responsive-store/vue`）
-- **零外部依赖**：框架依赖作为外部依赖处理，减少打包体积
-- **增强 TypeScript 支持**：为所有支持的框架提供增强的类型定义
-- **更好的测试覆盖率**：为所有框架适配器提供全面的单元测试
+- **同标签页同步**：同一 `key` 的所有组件共享一个管理器实例，`setValue` 后会立即互相同步
+- **兼容历史裸字符串**：新增 `parse: 'auto'`，`'dark'`、`'1'` 这类旧数据读取后仍然是字符串
+- **SSR / 隐私模式安全**：无 `window` 或写入抛错（配额满、Safari 隐私模式）时自动降级到内存存储
+- **函数式更新**：`setValue(prev => next)`，与 React `useState` 用法一致
+- **数据版本迁移**：`version` + `migrate(oldValue, oldVersion)` 平滑升级数据结构
+- **可删除 / 可清空**：新增 `remove()`、`clear()`，`clear()` 只清理本库管理的 `key`
+- **自定义序列化**：`serializer` / `deserializer` 支持 `Date`、`Map`、`Set` 等类型
+- **React 18+**：React 适配器改用 `useSyncExternalStore`，天然支持并发渲染与 SSR
+- **零运行时依赖**：构建时已内联所需的工具函数，使用方无需额外安装
 
 ## ✨ 历史特性 (v0.0.1-beta.8)
 
-- **React 支持**：新增 `useReactStorage` 钩子，专为 React 应用设计
+- **React 支持**：新增 `useStorage` 钩子，专为 React 应用设计
 - **跨标签页同步**：自动在不同浏览器标签页间同步数据
 - **TypeScript 支持**：为 Vue 和 React 提供完整的类型定义
 
@@ -212,27 +225,73 @@ const count = useStorage('count', 0, { deep: false, storage: StoreType.SESSION }
 count.value++;  // count 值变为 1，并且数据保存在 sessionStorage 中
 ```
 
+> 注意：`sessionStorage` 只在同一个标签页内有效，不会跨标签页同步，`storage` 事件也只在同标签页的 iframe 之间触发。需要跨标签页共享请使用 `localStorage`。
+
 #### 控制初始值监听
 
-默认情况下，`useStorage` 会监听到初始值的变化。如果你不希望监听初始值的变动，可以通过传递 `immediate` 参数来控制：
+`immediate` 默认为 `false`：组件创建时直接用存储中的值初始化，不会额外写一次存储。设置为 `true` 时，会在创建时立即把当前值写回存储（例如希望把默认值持久化）。
 
 ```ts
 // (v0.0.3+)
 import { useStorage, StoreType } from 'ew-responsive-store';
 
-// 初始化值变动时不立即被监听
-const count = useStorage('count', 0, { deep: false, immediate: false });
+// 创建时把默认值写入存储
+const count = useStorage('count', 0, { immediate: true, deep: false });
 
 // 本次改动才会被监听到
 count.value++;  // count 值变为 1
 ```
 
+#### 兼容历史裸字符串数据
+
+旧版本可能直接用原生 API 存过 `'dark'`、`'1'` 这类裸字符串。使用 `parse: 'auto'` 可以安全读取：
+
+```ts
+import { useStorage } from 'ew-responsive-store/react';
+
+const [theme, setTheme] = useStorage('ew-theme', 'light', { parse: 'auto' });
+// localStorage 中是 'dark' => theme === 'dark'（不会被当作非法 JSON 重置）
+```
+
+`auto` 的规则：读取时只有以 `{`、`[`、`"` 开头的字符串才尝试 JSON 解析，其余原样返回；写入时字符串原样存储，其他类型仍走 `JSON.stringify`。
+
+#### 删除与清空
+
+```ts
+const [value, setValue, actions] = useStorage('profile', { name: 'John' });
+
+actions.remove(); // 删除当前 key，值回落初始值
+actions.clear();  // 清理本库管理的所有 key（不会误删业务方的其它数据）
+```
+
+#### 数据版本迁移
+
+```ts
+const [profile] = useStorage('profile', { name: '', role: 'user' }, {
+  version: 2,
+  migrate: (oldValue: any) => ({ ...oldValue, role: oldValue.role ?? 'user' }),
+});
+```
+
+#### 自定义序列化 / 出错兜底
+
+```ts
+const [date, setDate] = useStorage('last-login', new Date(), {
+  serializer: (value) => String(value.getTime()),
+  deserializer: (raw) => new Date(Number(raw)),
+  onError: (context) => console.warn(context.operation, context.error),
+});
+```
+
+存储不可用或写入失败（配额满、隐私模式）时默认降级到内存存储；如需关闭可传 `memoryFallback: false`。
+
 ### 3. `parseStr` 方法
 
-`parseStr` 方法用于解析字符串值，它提供了两种解析方式，分别是：
+`parseStr` 方法用于解析字符串值，支持以下方式：
 
-- `EVAL`：类似于 `eval` 方法，可以执行字符串中的 JavaScript 代码。
-- `JSON`：类似于 `JSON.parse`，适用于解析 JSON 格式的字符串。
+- `JSON`（默认）：类似 `JSON.parse`。
+- `AUTO`：兼容裸字符串，`JSON.parse` 失败的容器字符串原样返回。
+- `EVAL`：**已废弃**，内部使用 `new Function`，在严格 CSP 环境（如 Tauri / Electron 加固）会直接报错，请勿在新代码中使用。
 
 #### 示例代码：
 
@@ -241,32 +300,16 @@ count.value++;  // count 值变为 1
 import { parseStr, ParseStrType } from 'ew-responsive-store';
 
 // 解析 JSON 字符串
-const testJSONData = parseStr('{"name":"eveningwater"}'); 
+const testJSONData = parseStr('{"name":"eveningwater"}');
 console.log(testJSONData);  // { name: "eveningwater" }
 
-// 执行 JavaScript 字符串
-const testEvalData = parseStr('console.log("hello, eveningwater")', ParseStrType.EVAL); 
-// 控制台会打印: hello, eveningwater
+// 兼容裸字符串
+const theme = parseStr('dark', ParseStrType.AUTO); // 'dark'
 ```
 
-### 2. React 使用 (v0.0.1-beta.8)
+### 2. React 使用 (v0.0.4)
 
-对于 React 应用，使用 `useStorage` 钩子从 React 入口点：
-
-> **注意**：虽然 `useStorage` 技术上可以在 React 中使用，但需要额外的 `useForceUpdate` 钩子来触发重新渲染：
->
-> ```tsx
-> import { useReducer } from "react";
-> 
-> function useForceUpdate() {
->   const [, dispatch] = useReducer(() => Object.create(null), {});
->   return dispatch;
-> }
-> 
-> export default useForceUpdate;
-> ```
->
-> **不推荐使用这种方式**，因为它很繁琐且违背了 React 的设计模式。建议使用 `useStorage` 来获得更好的 React 开发体验。
+对于 React 应用，从 React 入口点导入 `useStorage`。v0.0.4 起内部基于 `useSyncExternalStore` 实现，同标签页多组件、跨标签页与 SSR 都能自动同步。
 
 #### 基本 React 示例
 
