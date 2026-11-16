@@ -1,6 +1,6 @@
 {
   "name": "ew-responsive-store-docs",
-  "version": "0.0.",
+  "version": "0.0.1",
   "scripts": {
     "docs:dev": "rspress dev docs",
     "docs:build": "rspress build docs",
