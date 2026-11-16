@@ -1,8 +1,8 @@
 [English](./README.md) | [简体中文](./README.CN.md)
 
-# `ew-responsive-store` Making Session Storage Data Reactive
+# `ew-responsive-store` Making Storage Data Reactive
 
-If your project requires using session storage (either `localStorage` or `sessionStorage`) to persist data, and you want the data to be retained after a page refresh while also automatically updating the view when the data changes, I highly recommend using the `ew-responsive-store` library. It's about 4 KB gzipped and extremely easy to use. With just a single function call, you can make session storage data reactive, which can be applied to any framework-based project, even native JavaScript projects. The library also includes comprehensive unit tests and type inference.
+If your project requires using web storage (either `localStorage` or `sessionStorage`) to persist data, and you want the data to be retained after a page refresh while also automatically updating the view when the data changes, I highly recommend using the `ew-responsive-store` library. It's about 4 KB gzipped and extremely easy to use. With just a single function call, you can make storage data reactive, which can be applied to any framework-based project, even native JavaScript projects. The library also includes comprehensive unit tests and type inference.
 
 ## 📖 Documentation
 
@@ -11,7 +11,7 @@ If your project requires using session storage (either `localStorage` or `sessio
 
 The docs cover installation, quick starts for every framework, the full API reference, the changelog, and live examples.
 
-## ✨ New in v0.0.4
+## ✨ Highlights (v0.0.4+)
 
 - **Multi-Framework Support**: Added support for React, Vue, Preact, Solid, Svelte, Angular, and Vanilla JS
 - **Framework-Specific Entry Points**: Each framework has its own optimized entry point (e.g., `ew-responsive-store/react`, `ew-responsive-store/vue`)
@@ -108,7 +108,7 @@ import { useStorage } from 'ew-responsive-store';
 
 ### 1. Vue.js Usage
 
-The core of the `ew-responsive-store` package exports `useStorage` for Vue.js applications. The `useStorage` method is used to make session storage data reactive.
+The Vue subpath (`ew-responsive-store/vue`) exports `useStorage` for Vue.js applications, turning `localStorage` / `sessionStorage` data into reactive data. The root `useStorage` is the vanilla JavaScript adapter; do not import it directly in Vue.
 
 #### Basic Values
 

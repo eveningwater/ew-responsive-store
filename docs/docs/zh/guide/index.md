@@ -2,9 +2,9 @@
 
 ## 介绍
 
-如果你的项目中需要使用会话存储（`localStorage` 或 `sessionStorage`）来保存数据，且希望这些数据在页面刷新后依然能保留，并且能够在数据变化时自动更新界面，那么 `ew-responsive-store` 是完美的解决方案。
+如果你的项目中需要使用本地存储（`localStorage` 或 `sessionStorage`）来保存数据，且希望这些数据在页面刷新后依然能保留，并且能够在数据变化时自动更新界面，那么 `ew-responsive-store` 是完美的解决方案。
 
-它的体积约 4 KB（gzip），简单易用，只需要调用一个方法就能将会话存储的数据变成响应式数据，可以广泛应用于各种框架的项目中，甚至是原生 JavaScript 项目，该库还具备完善的单元测试和类型推导。
+它的体积约 4 KB（gzip），简单易用，只需要调用一个方法就能将存储数据变成响应式数据，可以广泛应用于各种框架的项目中，甚至是原生 JavaScript 项目，该库还具备完善的单元测试和类型推导。
 
 ## 安装
 
@@ -27,7 +27,7 @@ yarn add ew-responsive-store
 npm install react
 
 # Vue
-npm install @vue/reactivity @vue/shared
+npm install @vue/reactivity
 
 # Preact
 npm install preact
@@ -81,7 +81,7 @@ import { useStorage } from 'ew-responsive-store';
 
 ## 基本使用
 
-`ew-responsive-store` 包的核心导出了两个方法：`parseStr` 和 `useStorage`。其中，`useStorage` 用于将会话存储的数据变为响应式数据。
+`ew-responsive-store` 根入口导出原生 JavaScript 适配器的 `useStorage`，以及 `StoreType`、`ParseStrType`、`StorageManager` 相关 API 和 `parseStr`、`isValidJSON`、`isStorageEnabled` 等工具函数。根入口的 `useStorage` 用于把 `localStorage` / `sessionStorage` 中的数据变为响应式对象；Vue、React 等框架请使用各自的子路径入口。
 
 ### 基本值
 
@@ -112,7 +112,7 @@ const count = useStorage("count", 0);
 </script>
 ```
 
-此时，`count` 的值会保存在浏览器的会话存储中，并且它是响应式的，即页面刷新后 `count` 依然保留并且视图会自动更新。
+此时，`count` 的值会保存在浏览器的本地存储中，并且它是响应式的，即页面刷新后 `count` 依然保留并且视图会自动更新。
 
 ### 对象值
 
@@ -128,7 +128,7 @@ const userInfo = useStorage("user", { name: "eveningwater" });
 userInfo.value.name = "夕水"; // userInfo 的 name 属性变为 '夕水'
 ```
 
-当修改 `userInfo` 的 `name` 属性时，视图会自动更新，并且数据会保存在会话存储中。
+当修改 `userInfo` 的 `name` 属性时，视图会自动更新，并且数据会保存在本地存储中。
 
 ### 数组值
 
@@ -169,8 +169,7 @@ scope.stop()
 - 如果无法使用 `effectScope`，也可以手动释放，key 与存储区域需要和创建时一致：
 
 ```ts
-import { releaseStorageManager } from 'ew-responsive-store'
-import { StoreType } from 'ew-responsive-store'
+import { releaseStorageManager, StoreType } from 'ew-responsive-store'
 
 releaseStorageManager('settings', StoreType.LOCAL)
 ```

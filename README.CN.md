@@ -1,8 +1,8 @@
 [English](./README.md) | [简体中文](./README.CN.md)
 
-# `ew-responsive-store` 使用指南：让会话存储数据响应式化
+# `ew-responsive-store` 使用指南：让本地存储数据响应式化
 
-如果你的项目中需要使用会话存储（`localStorage` 或 `sessionStorage`）来保存数据，且希望这些数据在页面刷新后依然能保留，并且能够在数据变化时自动更新界面，那么我强烈推荐你使用 `ew-responsive-store` 这个库。它 gzip 后约 4 KB，简单易用，只需要调用一个方法就能将会话存储的数据变成响应式数据，可以广泛应用于各种框架的项目中，甚至是原生 JavaScript 项目，该库还具备完善的单元测试和类型推导。
+如果你的项目中需要使用本地存储（`localStorage` 或 `sessionStorage`）来保存数据，且希望这些数据在页面刷新后依然能保留，并且能够在数据变化时自动更新界面，那么我强烈推荐你使用 `ew-responsive-store` 这个库。它 gzip 后约 4 KB，简单易用，只需要调用一个方法就能将存储数据变成响应式数据，可以广泛应用于各种框架的项目中，甚至是原生 JavaScript 项目，该库还具备完善的单元测试和类型推导。
 
 ## 📖 官方文档
 
@@ -11,7 +11,7 @@
 
 文档涵盖安装、各框架快速上手、完整 API 参考、更新日志与在线示例。
 
-## ✨ v0.0.4 新特性
+## ✨ 核心特性（v0.0.4+）
 
 - **多框架支持**：新增对 React、Vue、Preact、Solid、Svelte、Angular 和原生 JavaScript 的支持
 - **框架专用入口**：每个框架都有独立的优化入口点（如 `ew-responsive-store/react`、`ew-responsive-store/vue`）
@@ -108,7 +108,7 @@ import { useStorage } from 'ew-responsive-store/vue';
 
 ### 1. Vue.js 使用
 
-`ew-responsive-store` 包的核心导出了 `useStorage` 方法用于 Vue.js 应用。其中，`useStorage` 用于将会话存储的数据变为响应式数据。
+`ew-responsive-store` 的 Vue 子路径（`ew-responsive-store/vue`）导出 `useStorage` 方法用于 Vue.js 应用，用于把 `localStorage` / `sessionStorage` 中的数据变为响应式数据。根入口的 `useStorage` 是原生 JavaScript 适配器，请勿在 Vue 中直接从根入口导入。
 
 #### 基本值
 
@@ -139,7 +139,7 @@ const count = useStorage('count', 0);
 </script>
 ```
 
-此时，`count` 的值会保存在浏览器的会话存储中，并且它是响应式的，即页面刷新后 `count` 依然保留并且视图会自动更新。
+此时，`count` 的值会保存在浏览器的本地存储中，并且它是响应式的，即页面刷新后 `count` 依然保留并且视图会自动更新。
 
 #### 对象值
 
@@ -170,7 +170,7 @@ const userInfo = useStorage('user', { name: 'eveningwater' });
 </script>
 ```
 
-当修改 `userInfo` 的 `name` 属性时，视图会自动更新，并且数据会保存在会话存储中。
+当修改 `userInfo` 的 `name` 属性时，视图会自动更新，并且数据会保存在本地存储中。
 
 #### 数组值
 
@@ -217,9 +217,9 @@ const count = useStorage('count', 0, { deep: false });
 count.value++;  // count 值变为 1
 ```
 
-#### 更改会话存储类型
+#### 更改存储类型
 
-默认情况下，`useStorage` 使用 `localStorage`，即永久会话存储。如果你想使用 `sessionStorage`，可以在第三个参数中指定 `storage` 配置项：
+默认情况下，`useStorage` 使用 `localStorage`，即持久化存储。如果你想使用 `sessionStorage`，可以在第三个参数中指定 `storage` 配置项：
 
 ```ts
 // (v0.0.3+)
@@ -349,7 +349,7 @@ export default Counter;
 
 ```tsx
 import React, { useState } from 'react';
-import { useStorage } from 'ew-responsive-store';
+import { useStorage } from 'ew-responsive-store/react';
 
 interface Todo {
   id: number;

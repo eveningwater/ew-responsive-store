@@ -3,8 +3,8 @@ pageType: home
 
 hero:
   name: ew-responsive-store
-  text: Making Session Storage Data Reactive
-  tagline: A lightweight library for reactive session storage data
+  text: Making Storage Data Reactive
+  tagline: A lightweight library for reactive storage data
   actions:
     - theme: brand
       text: Get Started

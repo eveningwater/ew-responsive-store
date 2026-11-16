@@ -3,12 +3,12 @@ pageType: home
 
 hero:
   name: ew-responsive-store
-  text: 让会话存储数据响应式化
-  tagline: 一个轻量级的响应式会话存储库
+  text: 让本地存储数据响应式化
+  tagline: 一个轻量级的响应式存储库
   actions:
     - theme: brand
       text: 开始使用
-      link: /zh/guide/
+      link: /guide/
     - theme: alt
       text: 在GitHub上查看
       link: https://github.com/eveningwater/ew-responsive-store

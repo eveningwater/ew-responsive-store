@@ -2,541 +2,353 @@
 
 ## ⚠️ 重要版本说明
 
-### v0.0.3 破坏性变更
+### v0.0.5（当前版本）
 
-**v0.0.3** 版本引入了重大变更，包括：
+补丁版本，修复子入口缺失 `useStorage`、`getSnapshot` 渲染期写存储等问题，并新增管理器回收 API。详见[更新日志](/changelog)。
 
-1. **框架专用入口点**：现在需要从特定的框架入口点导入
-2. **统一的API**：所有框架都使用 `useStorage` 函数名
-3. **零外部依赖**：框架依赖作为外部依赖处理
+### v0.0.4 破坏性变更
+
+1. **Vue `immediate` 默认值改为 `false`**：创建时直接使用存储中的值，不再额外写一次存储。需要把默认值立即持久化时显式传入 `immediate: true`。
+2. **`ParseStrType.EVAL` 标记为废弃**：内部使用 `new Function`，在严格 CSP（如 Tauri、Electron 加固）环境会直接抛错，请改用 `JSON` 或 `AUTO`。
+3. **UMD 产物扩展名改为 `.cjs`**：通过包名或子路径导入不受影响。
 
 ### 迁移指南
 
-**旧版本 (v0.0.1-beta.8 及之前)**：
+**旧版本（v0.0.1-beta.8 及之前）**：
+
 ```ts
-import { useStorage } from 'ew-responsive-store';
-import { useReactStorage } from 'ew-responsive-store';
+import { useStorage, useReactStorage } from 'ew-responsive-store';
 ```
 
-**新版本 (v0.0.3+)**：
+**v0.0.3+**：按框架从子路径导入。
+
 ```ts
-// Vue
-import { useStorage } from 'ew-responsive-store/vue';
-
-// React
-import { useStorage } from 'ew-responsive-store/react';
-
-// 其他框架...
+import { useStorage } from 'ew-responsive-store';          // 原生 JavaScript
+import { useStorage } from 'ew-responsive-store/vue';      // Vue
+import { useStorage } from 'ew-responsive-store/react';    // React
+import { useStorage } from 'ew-responsive-store/preact';   // Preact
+import { useStorage } from 'ew-responsive-store/solid';    // Solid
+import { useStorage } from 'ew-responsive-store/svelte';   // Svelte
+import { useStorage } from 'ew-responsive-store/angular';  // Angular
+import { useStorage } from 'ew-responsive-store/vanilla';  // 原生 JavaScript（显式子路径）
 ```
+
+`useReactStorage` 等旧名字仍作为别名导出，但不再推荐使用。
 
 ---
 
-## v0.0.3+ 多框架支持
+## 通用配置项
 
-### useStorage (Vue) - v0.0.3+
+所有框架共享 `BaseStoreOptions<T>`：
 
-`useStorage` 函数是 `ew-responsive-store` 库的核心 API。它允许你创建与浏览器存储（localStorage 或 sessionStorage）同步的响应式状态。
+| 属性 | 类型 | 默认值 | 描述 |
+| --- | --- | --- | --- |
+| `storage` | `StoreType` | `StoreType.LOCAL` | 存储区域：`LOCAL` 或 `SESSION` |
+| `parse` | `'json' \| 'auto'` | `'json'` | 反序列化模式 |
+| `serializer` | `(value: T) => string \| null \| undefined` | - | 自定义序列化；返回 `null` / `undefined` 时拒绝写入 |
+| `deserializer` | `(raw: string) => T` | - | 自定义反序列化 |
+| `version` | `number` | - | 数据版本号，配合 `migrate` 使用 |
+| `migrate` | `(oldValue: unknown, oldVersion: number) => T` | - | 读取旧版本数据时迁移并回写 |
+| `equals` | `(a: T, b: T) => boolean` | 引用 / JSON 字符串比较 | 相等时跳过写入与通知 |
+| `memoryFallback` | `boolean` | `true` | 存储不可用或写入失败时降级到内存 |
+| `onError` | `(ctx: StorageErrorContext) => void` | - | 错误回调，`ctx` 含 `key`、`storage`、`operation`、`error` |
 
-### 类型定义
+> 同一个 `key` + 存储区域共享一个管理器，`options` 与 `initialValue` 只在首次创建时生效。
 
-```ts
-function useStorage<T>(
-  key: string,
-  initialValue: T,
-  options: StoreOptions = {
-    storage: StoreType.LOCAL,
-    immediate: true,
-    deep: true,
-  }
-): Ref<T>;
-```
+### 解析模式
 
-### 参数
+- `json`（默认）：严格 JSON。解析失败回落到初始值。
+- `auto`：兼容历史裸字符串。读取时只有以 `{`、`[`、`"` 开头的字符串才尝试 JSON 解析，其余原样返回；写入时字符串原样存储，其他类型仍走 `JSON.stringify`。
 
-| 参数           | 类型           | 描述                                 |
-| -------------- | -------------- | ------------------------------------ |
-| `key`          | `string`       | 用于在存储中存储值的键               |
-| `initialValue` | `T`            | 如果在存储中找不到值，则使用的初始值 |
-| `options`      | `StoreOptions` | 配置选项（可选）                     |
+`auto` 下数字与布尔会以 JSON 写入，读取时可能回落为字符串；需要严格类型请使用 `json`。
 
-### 选项
+### 状态操作（StorageActions）
 
-`options` 参数接受以下属性：
+React、Preact、Solid 的第三个返回值，以及 Svelte、Vanilla 的返回对象，都提供：
 
-| 属性        | 类型        | 默认值            | 描述                                                   |
-| ----------- | ----------- | ----------------- | ------------------------------------------------------ |
-| `storage`   | `StoreType` | `StoreType.LOCAL` | 要使用的存储类型（`localStorage` 或 `sessionStorage`） |
-| `deep`      | `boolean`   | `true`            | 是否深度监视状态变化                                   |
+| 成员 | 描述 |
+| --- | --- |
+| `key` | 当前存储键 |
+| `remove()` | 删除当前 key，值回落初始值 |
+| `clear()` | 只清理本库管理的 key，不会调用原生 `storage.clear()` |
+| `manager` | 底层管理器实例 |
 
-此外，所有 Vue 的 watch 选项都受支持，因为 `StoreOptions` 扩展了 Vue 的 `WatchOptions`。
-
-### 返回值
-
-一个与指定存储同步的响应式 `Ref<T>`。
-
-### 示例
+### 底层管理器 API
 
 ```ts
-import { useStorage } from "ew-responsive-store/vue";
-import { StoreType } from "ew-responsive-store";
-
-// 基本用法，使用 localStorage
-const count = useStorage("count", 0);
-
-// 使用 sessionStorage
-const user = useStorage(
-  "user",
-  { name: "张三" },
-  { storage: StoreType.SESSION }
-);
-
-// 禁用深度监视
-const list = useStorage("list", [1, 2, 3], { deep: false });
-
-// 禁用立即效果
-const settings = useStorage(
-  "settings",
-  { theme: "dark" },
-  { immediate: false }
-);
+import {
+  getStorageManager,
+  retainStorageManager,
+  releaseStorageManager,
+  getRegisteredManagers,
+  clearManagedStorage,
+  clearStorageManagerRegistry,
+} from 'ew-responsive-store';
 ```
 
-### useStorage (React) - v0.0.3+
+| API | 描述 |
+| --- | --- |
+| `getStorageManager(key, initialValue, options?)` | 获取或创建同 key 的共享管理器 |
+| `retainStorageManager(key, storage?)` | 持有引用，与 `releaseStorageManager` 成对使用 |
+| `releaseStorageManager(key, storage?)` | 释放引用；计数归零且无订阅者时在微任务中回收 |
+| `getRegisteredManagers(storage?)` | 获取已注册的管理器 |
+| `clearManagedStorage(storage?)` | 删除本库管理的所有 key |
+| `clearStorageManagerRegistry()` | 销毁并移除全部管理器（测试 / 热更新用） |
 
-React 版本的 `useStorage` 函数，提供 React 原生的使用体验。
+框架适配器会在组件卸载时自动 `retain` / `release`；手动创建或非组件场景需自行调用。Vue 在 `setup` 外使用时，请放入 `effectScope()` 并通过 `scope.stop()` 释放。
+
+---
+
+## 框架适配器
+
+### useStorage (Vue)
 
 #### 类型定义
 
 ```ts
 function useStorage<T>(
   key: string,
-  initialValue: T,
-  options: ReactStoreOptions = {
-    storage: StoreType.LOCAL,
-  }
-): readonly [T, (newValue: T) => void];
+  initialValue: T | (() => T),
+  options?: VueStoreOptions<T>,
+): Ref<T>;
 ```
-
-#### 参数
-
-| 参数           | 类型                | 描述                                 |
-| -------------- | ------------------- | ------------------------------------ |
-| `key`          | `string`            | 用于在存储中存储值的键               |
-| `initialValue` | `T`                 | 如果在存储中找不到值，则使用的初始值 |
-| `options`      | `ReactStoreOptions` | 配置选项（可选）                     |
 
 #### 选项
 
-`options` 参数接受以下属性：
+在[通用配置项](#通用配置项)之外，Vue 额外支持：
 
-| 属性        | 类型        | 默认值            | 描述                                                   |
-| ----------- | ----------- | ----------------- | ------------------------------------------------------ |
-| `storage`   | `StoreType` | `StoreType.LOCAL` | 要使用的存储类型（`localStorage` 或 `sessionStorage`） |
+| 属性 | 类型 | 默认值 | 描述 |
+| --- | --- | --- | --- |
+| `immediate` | `boolean` | `false` | 是否在创建时立即把当前值写回存储 |
+| `deep` | `boolean` | `true` | 是否深度监听值变化 |
+
+其余 Vue `watch` 选项同样支持。
 
 #### 返回值
 
-一个包含以下内容的元组：
-- `[0]`: 当前值，类型为 `T`
-- `[1]`: 用于更新值的设置函数
+`Ref<T>`，与指定存储区域同步。
 
 #### 示例
 
-```tsx
-import React from 'react';
-import { useStorage, StoreType } from "ew-responsive-store/react";
-
-function Counter() {
-  // 基本用法，使用 localStorage
-  const [count, setCount] = useStorage("count", 0);
-  
-  // 使用 sessionStorage
-  const [user, setUser] = useStorage(
-    "user",
-    { name: "张三", age: 25 },
-    { storage: StoreType.SESSION }
-  );
-
-  const increment = () => setCount(count + 1);
-
-  return (
-    <div>
-      <p>计数: {count}</p>
-      <button onClick={increment}>增加</button>
-      
-      <p>用户: {user.name} ({user.age}岁)</p>
-      <button onClick={() => setUser({ ...user, age: user.age + 1 })}>
-        增加年龄
-      </button>
-    </div>
-  );
-}
-```
-
-### useStorage (Preact) - v0.0.3+
-
-Preact 版本的 `useStorage` 函数，与 React API 相同但针对 Preact 优化。
-
-```tsx
-import { useStorage } from "ew-responsive-store/preact";
-
-function Counter() {
-  const [count, setCount] = useStorage("count", 0);
-  return <div>Count: {count}</div>;
-}
-```
-
-### useStorage (Solid) - v0.0.3+
-
-Solid 版本的 `useStorage` 函数，返回 Solid 的 signal。
-
-```tsx
-import { useStorage } from "ew-responsive-store/solid";
-
-function Counter() {
-  const [count, setCount] = useStorage("count", 0);
-  return <div>Count: {count()}</div>;
-}
-```
-
-### useStorage (Svelte) - v0.0.3+
-
-Svelte 版本的 `useStorage` 函数，返回 Svelte store。
-
-```svelte
-<script>
-  import { useStorage } from "ew-responsive-store/svelte";
-  
-  const store = useStorage("count", 0);
-  let count = $store;
-</script>
-
-<div>Count: {count}</div>
-```
-
-### useStorage (Angular) - v0.0.3+
-
-Angular 版本的 `useStorage` 函数，返回 Angular signal。
-
 ```ts
-import { Component } from '@angular/core';
-import { useStorage } from "ew-responsive-store/angular";
+import { useStorage } from 'ew-responsive-store/vue';
+import { StoreType } from 'ew-responsive-store';
 
-@Component({
-  template: `<div>Count: {{ count() }}</div>`
-})
-export class CounterComponent {
-  private storage = useStorage("count", 0);
-  count = this.storage.value;
-}
-```
+const count = useStorage('count', 0);
+count.value += 1;
 
-### useStorage (Vanilla JS) - v0.0.3+
+const user = useStorage('user', { name: '张三' }, {
+  storage: StoreType.SESSION,
+});
 
-原生 JavaScript 版本的 `useStorage` 函数，返回存储管理器对象。
-
-```js
-import { useStorage } from "ew-responsive-store/vanilla";
-
-const storage = useStorage("count", 0);
-
-// 获取当前值
-console.log(storage.value); // 0
-
-// 更新值
-storage.setValue(1);
-console.log(storage.value); // 1
-
-// 订阅变化
-storage.subscribe((newValue) => {
-  console.log("Value changed:", newValue);
+// 默认不会在创建时写回；需要持久化初始值时显式开启
+const settings = useStorage('settings', { theme: 'dark' }, {
+  immediate: true,
 });
 ```
 
----
-
-## 历史版本 API (v0.0.1-beta.8 及之前)
-
-### useStorage (Vue) - v0.0.1-beta.8
-
-`useStorage` 函数是 `ew-responsive-store` 库的核心 API。它允许你创建与浏览器存储（localStorage 或 sessionStorage）同步的响应式状态。
+### useStorage (React)
 
 #### 类型定义
 
 ```ts
 function useStorage<T>(
   key: string,
-  initialValue: T,
-  options: StoreOptions = {
-    storage: StoreType.LOCAL,
-    immediate: true,
-    deep: true,
-  }
-): Ref<T>;
+  initialValue: T | (() => T),
+  options?: ReactStoreOptions<T>,
+): readonly [T, (value: StorageUpdater<T>) => void, StorageActions<T>];
 ```
 
-#### 参数
-
-| 参数           | 类型           | 描述                                 |
-| -------------- | -------------- | ------------------------------------ |
-| `key`          | `string`       | 用于在存储中存储值的键               |
-| `initialValue` | `T`            | 如果在存储中找不到值，则使用的初始值 |
-| `options`      | `StoreOptions` | 配置选项（可选）                     |
-
-#### 选项
-
-`options` 参数接受以下属性：
-
-| 属性        | 类型        | 默认值            | 描述                                                   |
-| ----------- | ----------- | ----------------- | ------------------------------------------------------ |
-| `storage`   | `StoreType` | `StoreType.LOCAL` | 要使用的存储类型（`localStorage` 或 `sessionStorage`） |
-| `deep`      | `boolean`   | `true`            | 是否深度监视状态变化                                   |
-
-此外，所有 Vue 的 watch 选项都受支持，因为 `StoreOptions` 扩展了 Vue 的 `WatchOptions`。
+基于 `useSyncExternalStore`，支持 React 18+ 的并发渲染与 SSR（服务端使用 `getInitialSnapshot()` 返回初始值）。
 
 #### 返回值
 
-一个与指定存储同步的响应式 `Ref<T>`。
+- `[0]`：当前值 `T`
+- `[1]`：更新函数，支持 `setValue(next)` 与 `setValue(prev => next)`
+- `[2]`：`{ key, remove, clear, manager }`
 
 #### 示例
 
-```ts
-import { useStorage } from "ew-responsive-store";
-import { StoreType } from "ew-responsive-store/typings/core/enum";
-
-// 基本用法，使用 localStorage
-const count = useStorage("count", 0);
-
-// 使用 sessionStorage
-const user = useStorage(
-  "user",
-  { name: "张三" },
-  { storage: StoreType.SESSION }
-);
-
-// 禁用深度监视
-const list = useStorage("list", [1, 2, 3], { deep: false });
-
-// 禁用立即效果
-const settings = useStorage(
-  "settings",
-  { theme: "dark" },
-  { immediate: false }
-);
-```
-
-## useReactStorage (React) - v0.0.1-beta.7
-
-`useReactStorage` 函数专为 React 应用程序设计。它提供了一种 React 原生的方式来管理与浏览器存储同步的状态。
-
-### 类型定义
-
-```ts
-function useReactStorage<T>(
-  key: string,
-  initialValue: T,
-  options: ReactStoreOptions = {
-    storage: StoreType.LOCAL,
-  }
-): readonly [T, (newValue: T) => void];
-```
-
-### 参数
-
-| 参数           | 类型                | 描述                                 |
-| -------------- | ------------------- | ------------------------------------ |
-| `key`          | `string`            | 用于在存储中存储值的键               |
-| `initialValue` | `T`                 | 如果在存储中找不到值，则使用的初始值 |
-| `options`      | `ReactStoreOptions` | 配置选项（可选）                     |
-
-### 选项
-
-`options` 参数接受以下属性：
-
-| 属性        | 类型        | 默认值            | 描述                                                   |
-| ----------- | ----------- | ----------------- | ------------------------------------------------------ |
-| `storage`   | `StoreType` | `StoreType.LOCAL` | 要使用的存储类型（`localStorage` 或 `sessionStorage`） |
-
-### 返回值
-
-一个包含以下内容的元组：
-- `[0]`: 当前值，类型为 `T`
-- `[1]`: 用于更新值的设置函数
-
-### 示例
-
 ```tsx
-import React from 'react';
-import { useReactStorage, StoreType } from "ew-responsive-store";
+import { useStorage } from 'ew-responsive-store/react';
 
-function Counter() {
-  // 基本用法，使用 localStorage
-  const [count, setCount] = useReactStorage("count", 0);
-  
-  // 使用 sessionStorage
-  const [user, setUser] = useReactStorage(
-    "user",
-    { name: "张三", age: 25 },
-    { storage: StoreType.SESSION }
-  );
+function Todos() {
+  const [todos, setTodos, actions] = useStorage<string[]>('todos', []);
 
-  // 复杂数据类型
-  const [todos, setTodos] = useReactStorage("todos", [
-    { id: 1, text: "学习 React", completed: false },
-    { id: 2, text: "学习 TypeScript", completed: true }
-  ]);
-
-  const increment = () => setCount(count + 1);
-  const addTodo = (text: string) => {
-    setTodos([...todos, { 
-      id: Date.now(), 
-      text, 
-      completed: false 
-    }]);
-  };
+  const add = (title: string) =>
+    setTodos((prev) => [...prev, title]);
 
   return (
     <div>
-      <p>计数: {count}</p>
-      <button onClick={increment}>增加</button>
-      
-      <p>用户: {user.name} ({user.age}岁)</p>
-      <button onClick={() => setUser({ ...user, age: user.age + 1 })}>
-        增加年龄
-      </button>
-      
-      <div>
-        <h3>待办事项:</h3>
-        {todos.map(todo => (
-          <div key={todo.id}>
-            <span style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}>
-              {todo.text}
-            </span>
-          </div>
-        ))}
-      </div>
+      <button onClick={() => add('新待办')}>添加</button>
+      <button onClick={actions.remove}>清空当前 key</button>
     </div>
   );
 }
 ```
 
-### 跨标签页同步
+### useStorage (Preact)
 
-`useReactStorage` 使用 `storage` 事件自动同步不同浏览器标签页之间的数据：
+与 React 相同的三元组返回值：
 
 ```tsx
-import { useReactStorage } from "ew-responsive-store";
+import { useStorage } from 'ew-responsive-store/preact';
 
-function App() {
-  const [theme, setTheme] = useReactStorage("theme", "light");
-  
-  // 当改变时，这会在其他标签页中自动更新
-  const toggleTheme = () => {
-    setTheme(theme === "light" ? "dark" : "light");
-  };
+const [count, setCount, actions] = useStorage('count', 0);
+```
 
-  return (
-    <div className={`app ${theme}`}>
-      <button onClick={toggleTheme}>
-        切换到 {theme === "light" ? "深色" : "浅色"} 主题
-      </button>
-    </div>
-  );
+### useStorage (Solid)
+
+返回 `[Accessor<T>, setter, StorageActions<T>]`：
+
+```tsx
+import { useStorage } from 'ew-responsive-store/solid';
+
+function Counter() {
+  const [count, setCount] = useStorage('count', 0);
+  return <button onClick={() => setCount(count() + 1)}>{count()}</button>;
 }
 ```
 
-### 错误处理
+### useStorage (Svelte)
 
-如果存储不可用，该钩子会抛出错误：
+返回 Svelte store，并附加 `set` / `update` / `remove` / `clear` / `destroy`：
 
-```tsx
-import { useReactStorage } from "ew-responsive-store";
+```svelte
+<script>
+  import { useStorage } from 'ew-responsive-store/svelte';
 
-function SafeStorage() {
-  try {
-    const [data, setData] = useReactStorage("data", {});
-    return <div>存储可用</div>;
-  } catch (error) {
-    return <div>存储不可用: {error.message}</div>;
+  const store = useStorage('count', 0);
+  $: count = $store;
+
+  function reset() {
+    store.remove();
   }
+</script>
+
+<button on:click={reset}>Count: {count}</button>
+```
+
+### useStorage (Angular)
+
+需在组件 / 服务的注入上下文中调用。返回值：
+
+```ts
+interface AngularStorageReturn<T> {
+  value: () => T;                                  // computed signal
+  setValue: (value: StorageUpdater<T>) => void;
+  updateValue: (updater: (current: T) => T) => void;
+  reset: () => void;
+  remove: () => void;
+  clear: () => void;
 }
 ```
 
-## parseStr
-
-`parseStr` 函数是一个用于解析字符串值的实用工具。它提供了两种解析模式：`EVAL` 和 `JSON`。
-
-### 类型定义
-
 ```ts
-function parseStr<T>(
-  str: string,
-  type: parseStrType = parseStrType.JSON
-): T | null;
+import { Component } from '@angular/core';
+import { useStorage } from 'ew-responsive-store/angular';
+
+@Component({
+  template: `
+    <div>Count: {{ storage.value() }}</div>
+    <button (click)="storage.setValue(storage.value() + 1)">+1</button>
+  `,
+})
+export class CounterComponent {
+  storage = useStorage('count', 0);
+}
 ```
 
-### 参数
+组件的 `DestroyRef` 触发时会自动释放管理器。
 
-| 参数   | 类型           | 描述                                 |
-| ------ | -------------- | ------------------------------------ |
-| `str`  | `string`       | 要解析的字符串                       |
-| `type` | `parseStrType` | 要使用的解析方法（`JSON` 或 `EVAL`） |
+### useStorage (Vanilla JS)
 
-### 返回值
-
-类型为 `T` 的解析值，如果解析失败则为 `null`。
-
-### 示例
+根入口与 `/vanilla` 都指向原生适配器：
 
 ```ts
-import { parseStr, ParseStrType } from "ew-responsive-store";
+import { useStorage } from 'ew-responsive-store';
 
-// 解析 JSON
-const data = parseStr<{ name: string }>('{ "name": "张三" }');
-// 结果: { name: '张三' }
+const storage = useStorage('count', 0);
 
-// 执行 JavaScript 代码
-const result = parseStr<number>("1 + 2", ParseStrType.EVAL);
-// 结果: 3
+storage.value;              // 当前值
+storage.setValue(1);        // 直接赋值
+storage.updateValue((n) => n + 1);
+storage.remove();           // 删除 key，回落初始值
+storage.clear();            // 清理本库管理的 key
+const unsubscribe = storage.subscribe((value) => console.log(value));
+storage.destroy();          // 退订并释放管理器
 ```
+
+---
 
 ## 实用函数
 
-### isValidJSON
-
-检查字符串是否为有效的 JSON。
+### parseStr
 
 ```ts
-function isValidJSON(val: string): boolean;
+function parseStr<T>(str: string, type?: ParseStrType): T | null;
+```
+
+| 参数 | 类型 | 默认值 | 描述 |
+| --- | --- | --- | --- |
+| `str` | `string` | - | 要解析的字符串 |
+| `type` | `ParseStrType` | `ParseStrType.JSON` | 解析模式：`JSON`、`AUTO` 或已废弃的 `EVAL` |
+
+```ts
+import { parseStr, ParseStrType } from 'ew-responsive-store';
+
+parseStr<{ name: string }>('{"name":"张三"}');
+parseStr('dark', ParseStrType.AUTO); // 'dark'
+```
+
+> `ParseStrType.EVAL` 已废弃，严格 CSP 环境下会抛错，不要在新代码中使用。
+
+### isValidJSON
+
+```ts
+function isValidJSON(value: string): boolean;
 ```
 
 ### isStorageEnabled
 
-检查当前环境中是否启用了存储类型。
-
 ```ts
-function isStorageEnabled(storage: Storage): boolean;
+function isStorageEnabled(storage?: Storage): boolean;
 ```
+
+检测存储是否可用（Safari 隐私模式、配额受限等场景），结果会被缓存。
+
+---
 
 ## 枚举
 
 ### StoreType
 
-定义可用的存储类型。
-
 ```ts
 enum StoreType {
-  LOCAL = "localStorage",
-  SESSION = "sessionStorage",
+  LOCAL = 'localStorage',
+  SESSION = 'sessionStorage',
 }
 ```
 
-### parseStrType
-
-定义 `parseStr` 的可用解析方法。
+### ParseStrType
 
 ```ts
-enum parseStrType {
-  EVAL = "eval",
-  JSON = "json",
+enum ParseStrType {
+  JSON = 'json',
+  AUTO = 'auto',
+  /** @deprecated 使用 new Function，严格 CSP 下会抛错 */
+  EVAL = 'eval',
 }
 ```
+
+---
+
+## 历史版本 API
+
+v0.0.1-beta.8 及之前的 `useStorage` 默认 `immediate: true`，React 使用独立的 `useReactStorage`。这些接口仅出于兼容保留，行为与当前版本不同：
+
+- 旧 Vue `useStorage` 的 `immediate` 默认值已改为 `false`。
+- `useReactStorage` 现在是 `useStorage` 的别名，返回值已扩展为三元组。
+- 旧文档中的 `parseStr` 仅支持 `JSON` / `EVAL`，当前新增 `AUTO` 并废弃 `EVAL`。
+
+新项目请直接使用上文的统一 API。

@@ -1,542 +1,354 @@
 # API Reference
 
-## ⚠️ Important Version Notice
+## ⚠️ Important Version Notes
 
-### v0.0.3 Breaking Changes
+### v0.0.5 (current)
 
-**v0.0.3** introduces major changes including:
+A patch release that fixes missing `useStorage` exports in subpath entries, writes during render in `getSnapshot`, and adds manager recycling APIs. See the [changelog](/en/changelog).
 
-1. **Framework-specific entry points**: Now requires importing from specific framework entry points
-2. **Unified API**: All frameworks use the `useStorage` function name
-3. **Zero external dependencies**: Framework dependencies are treated as external
+### v0.0.4 breaking changes
 
-### Migration Guide
+1. **Vue `immediate` now defaults to `false`**: the value is initialized from storage instead of being written back on creation. Pass `immediate: true` when you need the initial value persisted immediately.
+2. **`ParseStrType.EVAL` is deprecated**: it uses `new Function` and throws under strict CSP (e.g. hardened Tauri or Electron). Use `JSON` or `AUTO` instead.
+3. **UMD output extension changed to `.cjs`**: importing through the package name or subpaths is unaffected.
 
-**Old version (v0.0.1-beta.8 and earlier)**:
+### Migration guide
+
+**Old versions (v0.0.1-beta.8 and earlier)**:
+
 ```ts
-import { useStorage } from 'ew-responsive-store';
-import { useReactStorage } from 'ew-responsive-store';
+import { useStorage, useReactStorage } from 'ew-responsive-store';
 ```
 
-**New version (v0.0.3+)**:
+**v0.0.3+**: import from the framework-specific subpath.
+
 ```ts
-// Vue
-import { useStorage } from 'ew-responsive-store/vue';
-
-// React
-import { useStorage } from 'ew-responsive-store/react';
-
-// Other frameworks...
+import { useStorage } from 'ew-responsive-store';          // Vanilla JavaScript
+import { useStorage } from 'ew-responsive-store/vue';      // Vue
+import { useStorage } from 'ew-responsive-store/react';    // React
+import { useStorage } from 'ew-responsive-store/preact';   // Preact
+import { useStorage } from 'ew-responsive-store/solid';    // Solid
+import { useStorage } from 'ew-responsive-store/svelte';   // Svelte
+import { useStorage } from 'ew-responsive-store/angular';  // Angular
+import { useStorage } from 'ew-responsive-store/vanilla';  // Vanilla (explicit subpath)
 ```
+
+Legacy names such as `useReactStorage` are still exported as aliases but are no longer recommended.
 
 ---
 
-## v0.0.3+ Multi-Framework Support
+## Shared Options
 
-### useStorage (Vue) - v0.0.3+
+All frameworks share `BaseStoreOptions<T>`:
 
-The `useStorage` function is the core API of the `ew-responsive-store` library. It allows you to create reactive state that is synchronized with browser storage (localStorage or sessionStorage).
+| Property | Type | Default | Description |
+| --- | --- | --- | --- |
+| `storage` | `StoreType` | `StoreType.LOCAL` | Storage area: `LOCAL` or `SESSION` |
+| `parse` | `'json' \| 'auto'` | `'json'` | Deserialization mode |
+| `serializer` | `(value: T) => string \| null \| undefined` | - | Custom serializer; returning `null` / `undefined` rejects the write |
+| `deserializer` | `(raw: string) => T` | - | Custom deserializer |
+| `version` | `number` | - | Data version used together with `migrate` |
+| `migrate` | `(oldValue: unknown, oldVersion: number) => T` | - | Migrates old data on read and writes the result back |
+| `equals` | `(a: T, b: T) => boolean` | Reference / JSON string comparison | Skips writes and notifications when equal |
+| `memoryFallback` | `boolean` | `true` | Falls back to memory when storage is unavailable or a write fails |
+| `onError` | `(ctx: StorageErrorContext) => void` | - | Error callback; `ctx` contains `key`, `storage`, `operation`, and `error` |
 
-### Type Definition
+> The same `key` + storage area shares one manager. `options` and `initialValue` only take effect on first creation.
+
+### Parse modes
+
+- `json` (default): strict JSON; parsing failures fall back to the initial value.
+- `auto`: compatible with legacy bare strings. On read, only strings starting with `{`, `[`, or `"` are parsed as JSON; everything else is returned as-is. On write, strings are stored as-is and other types still use `JSON.stringify`.
+
+With `auto`, numbers and booleans are written as JSON and may come back as strings; use `json` when strict types matter.
+
+### StorageActions
+
+The third return value in React, Preact, and Solid, and the returned object in Svelte and Vanilla expose:
+
+| Member | Description |
+| --- | --- |
+| `key` | The current storage key |
+| `remove()` | Removes the key and falls back to the initial value |
+| `clear()` | Clears only keys managed by this library; it never calls native `storage.clear()` |
+| `manager` | The underlying manager instance |
+
+### Low-level manager API
+
+```ts
+import {
+  getStorageManager,
+  retainStorageManager,
+  releaseStorageManager,
+  getRegisteredManagers,
+  clearManagedStorage,
+  clearStorageManagerRegistry,
+} from 'ew-responsive-store';
+```
+
+| API | Description |
+| --- | --- |
+| `getStorageManager(key, initialValue, options?)` | Gets or creates the shared manager for a key |
+| `retainStorageManager(key, storage?)` | Acquires a reference; pair it with `releaseStorageManager` |
+| `releaseStorageManager(key, storage?)` | Releases a reference; recycles in a microtask when the count reaches zero and there are no subscribers |
+| `getRegisteredManagers(storage?)` | Returns registered managers |
+| `clearManagedStorage(storage?)` | Removes all keys managed by this library |
+| `clearStorageManagerRegistry()` | Destroys and removes every manager (for tests / HMR) |
+
+Framework adapters automatically retain and release on mount and unmount. Manual instances and non-component scenarios must do it themselves. When using Vue outside `setup`, wrap the call in `effectScope()` and release with `scope.stop()`.
+
+---
+
+## Framework Adapters
+
+### useStorage (Vue)
+
+#### Signature
 
 ```ts
 function useStorage<T>(
   key: string,
-  initialValue: T,
-  options: StoreOptions = {
-    storage: StoreType.LOCAL,
-    immediate: true,
-    deep: true,
-  }
+  initialValue: T | (() => T),
+  options?: VueStoreOptions<T>,
 ): Ref<T>;
 ```
 
-### Parameters
-
-| Parameter      | Type           | Description                                              |
-| -------------- | -------------- | -------------------------------------------------------- |
-| `key`          | `string`       | The key to use for storing the value in storage          |
-| `initialValue` | `T`            | The initial value to use if no value is found in storage |
-| `options`      | `StoreOptions` | Configuration options (optional)                         |
-
-### Options
-
-The `options` parameter accepts the following properties:
-
-| Property    | Type        | Default           | Description                                                  |
-| ----------- | ----------- | ----------------- | ------------------------------------------------------------ |
-| `storage`   | `StoreType` | `StoreType.LOCAL` | The storage type to use (`localStorage` or `sessionStorage`) |
-| `deep`      | `boolean`   | `true`            | Whether to deeply watch the state for changes                |
-
-Additionally, all Vue watch options are supported, as `StoreOptions` extends `WatchOptions` from Vue.
-
-### Returns
-
-A reactive `Ref<T>` that is synchronized with the specified storage.
-
-### Example
-
-```ts
-import { useStorage } from "ew-responsive-store/vue";
-import { StoreType } from "ew-responsive-store";
-
-// Basic usage with localStorage
-const count = useStorage("count", 0);
-
-// Using sessionStorage
-const user = useStorage(
-  "user",
-  { name: "John" },
-  { storage: StoreType.SESSION }
-);
-
-// Disabling deep watching
-const list = useStorage("list", [1, 2, 3], { deep: false });
-
-// Disabling immediate effect
-const settings = useStorage(
-  "settings",
-  { theme: "dark" },
-  { immediate: false }
-);
-```
-
-### useStorage (React) - v0.0.3+
-
-React version of the `useStorage` function, providing a React-native experience.
-
-#### Type Definition
-
-```ts
-function useStorage<T>(
-  key: string,
-  initialValue: T,
-  options: ReactStoreOptions = {
-    storage: StoreType.LOCAL,
-  }
-): readonly [T, (newValue: T) => void];
-```
-
-#### Parameters
-
-| Parameter      | Type               | Description                                              |
-| -------------- | ------------------ | -------------------------------------------------------- |
-| `key`          | `string`           | The key to use for storing the value in storage          |
-| `initialValue` | `T`                | The initial value to use if no value is found in storage |
-| `options`      | `ReactStoreOptions`| Configuration options (optional)                         |
-
 #### Options
 
-The `options` parameter accepts the following properties:
+In addition to the [shared options](#shared-options), Vue supports:
 
-| Property    | Type        | Default           | Description                                                  |
-| ----------- | ----------- | ----------------- | ------------------------------------------------------------ |
-| `storage`   | `StoreType` | `StoreType.LOCAL` | The storage type to use (`localStorage` or `sessionStorage`) |
+| Property | Type | Default | Description |
+| --- | --- | --- | --- |
+| `immediate` | `boolean` | `false` | Writes the current value back to storage on creation |
+| `deep` | `boolean` | `true` | Watches nested mutations |
 
-#### Returns
+Other Vue `watch` options are also supported.
 
-A tuple containing:
-- `[0]`: The current value of type `T`
-- `[1]`: A setter function to update the value
+#### Return value
+
+A `Ref<T>` kept in sync with the selected storage area.
 
 #### Example
 
-```tsx
-import React from 'react';
-import { useStorage, StoreType } from "ew-responsive-store/react";
-
-function Counter() {
-  // Basic usage with localStorage
-  const [count, setCount] = useStorage("count", 0);
-  
-  // Using sessionStorage
-  const [user, setUser] = useStorage(
-    "user",
-    { name: "John", age: 25 },
-    { storage: StoreType.SESSION }
-  );
-
-  const increment = () => setCount(count + 1);
-
-  return (
-    <div>
-      <p>Count: {count}</p>
-      <button onClick={increment}>Increment</button>
-      
-      <p>User: {user.name} ({user.age})</p>
-      <button onClick={() => setUser({ ...user, age: user.age + 1 })}>
-        Increase Age
-      </button>
-    </div>
-  );
-}
-```
-
-### useStorage (Preact) - v0.0.3+
-
-Preact version of the `useStorage` function, same API as React but optimized for Preact.
-
-```tsx
-import { useStorage } from "ew-responsive-store/preact";
-
-function Counter() {
-  const [count, setCount] = useStorage("count", 0);
-  return <div>Count: {count}</div>;
-}
-```
-
-### useStorage (Solid) - v0.0.3+
-
-Solid version of the `useStorage` function, returns Solid signals.
-
-```tsx
-import { useStorage } from "ew-responsive-store/solid";
-
-function Counter() {
-  const [count, setCount] = useStorage("count", 0);
-  return <div>Count: {count()}</div>;
-}
-```
-
-### useStorage (Svelte) - v0.0.3+
-
-Svelte version of the `useStorage` function, returns Svelte store.
-
-```svelte
-<script>
-  import { useStorage } from "ew-responsive-store/svelte";
-  
-  const store = useStorage("count", 0);
-  let count = $store;
-</script>
-
-<div>Count: {count}</div>
-```
-
-### useStorage (Angular) - v0.0.3+
-
-Angular version of the `useStorage` function, returns Angular signals.
-
 ```ts
-import { Component } from '@angular/core';
-import { useStorage } from "ew-responsive-store/angular";
+import { useStorage } from 'ew-responsive-store/vue';
+import { StoreType } from 'ew-responsive-store';
 
-@Component({
-  template: `<div>Count: {{ count() }}</div>`
-})
-export class CounterComponent {
-  private storage = useStorage("count", 0);
-  count = this.storage.value;
-}
-```
+const count = useStorage('count', 0);
+count.value += 1;
 
-### useStorage (Vanilla JS) - v0.0.3+
+const user = useStorage('user', { name: 'Alice' }, {
+  storage: StoreType.SESSION,
+});
 
-Vanilla JavaScript version of the `useStorage` function, returns a storage manager object.
-
-```js
-import { useStorage } from "ew-responsive-store/vanilla";
-
-const storage = useStorage("count", 0);
-
-// Get current value
-console.log(storage.value); // 0
-
-// Update value
-storage.setValue(1);
-console.log(storage.value); // 1
-
-// Subscribe to changes
-storage.subscribe((newValue) => {
-  console.log("Value changed:", newValue);
+// Nothing is written on creation by default; opt in when needed
+const settings = useStorage('settings', { theme: 'dark' }, {
+  immediate: true,
 });
 ```
 
----
+### useStorage (React)
 
-## Legacy API (v0.0.1-beta.8 and earlier)
-
-### useStorage (Vue) - v0.0.1-beta.8
-
-The `useStorage` function is the core API of the `ew-responsive-store` library. It allows you to create reactive state that is synchronized with browser storage (localStorage or sessionStorage).
-
-#### Type Definition
+#### Signature
 
 ```ts
 function useStorage<T>(
   key: string,
-  initialValue: T,
-  options: StoreOptions = {
-    storage: StoreType.LOCAL,
-    immediate: true,
-    deep: true,
-  }
-): Ref<T>;
+  initialValue: T | (() => T),
+  options?: ReactStoreOptions<T>,
+): readonly [T, (value: StorageUpdater<T>) => void, StorageActions<T>];
 ```
 
-#### Parameters
+Built on `useSyncExternalStore`, with React 18+ concurrent rendering and SSR support (`getInitialSnapshot()` returns the initial value on the server).
 
-| Parameter      | Type           | Description                                              |
-| -------------- | -------------- | -------------------------------------------------------- |
-| `key`          | `string`       | The key to use for storing the value in storage          |
-| `initialValue` | `T`            | The initial value to use if no value is found in storage |
-| `options`      | `StoreOptions` | Configuration options (optional)                         |
+#### Return value
 
-#### Options
-
-The `options` parameter accepts the following properties:
-
-| Property    | Type        | Default           | Description                                                  |
-| ----------- | ----------- | ----------------- | ------------------------------------------------------------ |
-| `storage`   | `StoreType` | `StoreType.LOCAL` | The storage type to use (`localStorage` or `sessionStorage`) |
-| `deep`      | `boolean`   | `true`            | Whether to deeply watch the state for changes                |
-
-Additionally, all Vue watch options are supported, as `StoreOptions` extends `WatchOptions` from Vue.
-
-#### Returns
-
-A reactive `Ref<T>` that is synchronized with the specified storage.
+- `[0]`: the current value `T`
+- `[1]`: updater supporting `setValue(next)` and `setValue(prev => next)`
+- `[2]`: `{ key, remove, clear, manager }`
 
 #### Example
 
-```ts
-import { useStorage } from "ew-responsive-store";
-import { StoreType } from "ew-responsive-store/typings/core/enum";
-
-// Basic usage with localStorage
-const count = useStorage("count", 0);
-
-// Using sessionStorage
-const user = useStorage(
-  "user",
-  { name: "John" },
-  { storage: StoreType.SESSION }
-);
-
-// Disabling deep watching
-const list = useStorage("list", [1, 2, 3], { deep: false });
-
-// Disabling immediate effect
-const settings = useStorage(
-  "settings",
-  { theme: "dark" },
-  { immediate: false }
-);
-```
-
-## useReactStorage (React) - v0.0.1-beta.7
-
-The `useReactStorage` function is designed specifically for React applications. It provides a React-native way to manage state that is synchronized with browser storage.
-
-### Type Definition
-
-```ts
-function useReactStorage<T>(
-  key: string,
-  initialValue: T,
-  options: ReactStoreOptions = {
-    storage: StoreType.LOCAL,
-  }
-): readonly [T, (newValue: T) => void];
-```
-
-### Parameters
-
-| Parameter      | Type               | Description                                              |
-| -------------- | ------------------ | -------------------------------------------------------- |
-| `key`          | `string`           | The key to use for storing the value in storage          |
-| `initialValue` | `T`                | The initial value to use if no value is found in storage |
-| `options`      | `ReactStoreOptions`| Configuration options (optional)                         |
-
-### Options
-
-The `options` parameter accepts the following properties:
-
-| Property    | Type        | Default           | Description                                                  |
-| ----------- | ----------- | ----------------- | ------------------------------------------------------------ |
-| `storage`   | `StoreType` | `StoreType.LOCAL` | The storage type to use (`localStorage` or `sessionStorage`) |
-
-### Returns
-
-A tuple containing:
-- `[0]`: The current value of type `T`
-- `[1]`: A setter function to update the value
-
-### Example
-
 ```tsx
-import React from 'react';
-import { useReactStorage, StoreType } from "ew-responsive-store";
+import { useStorage } from 'ew-responsive-store/react';
 
-function Counter() {
-  // Basic usage with localStorage
-  const [count, setCount] = useReactStorage("count", 0);
-  
-  // Using sessionStorage
-  const [user, setUser] = useReactStorage(
-    "user",
-    { name: "John", age: 25 },
-    { storage: StoreType.SESSION }
-  );
+function Todos() {
+  const [todos, setTodos, actions] = useStorage<string[]>('todos', []);
 
-  // Complex data types
-  const [todos, setTodos] = useReactStorage("todos", [
-    { id: 1, text: "Learn React", completed: false },
-    { id: 2, text: "Learn TypeScript", completed: true }
-  ]);
-
-  const increment = () => setCount(count + 1);
-  const addTodo = (text: string) => {
-    setTodos([...todos, { 
-      id: Date.now(), 
-      text, 
-      completed: false 
-    }]);
-  };
+  const add = (title: string) =>
+    setTodos((prev) => [...prev, title]);
 
   return (
     <div>
-      <p>Count: {count}</p>
-      <button onClick={increment}>Increment</button>
-      
-      <p>User: {user.name} ({user.age})</p>
-      <button onClick={() => setUser({ ...user, age: user.age + 1 })}>
-        Increase Age
-      </button>
-      
-      <div>
-        <h3>Todos:</h3>
-        {todos.map(todo => (
-          <div key={todo.id}>
-            <span style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}>
-              {todo.text}
-            </span>
-          </div>
-        ))}
-      </div>
+      <button onClick={() => add('New todo')}>Add</button>
+      <button onClick={actions.remove}>Remove current key</button>
     </div>
   );
 }
 ```
 
-### Cross-tab Synchronization
+### useStorage (Preact)
 
-`useReactStorage` automatically synchronizes data across browser tabs using the `storage` event:
+Same three-element tuple as React:
 
 ```tsx
-import { useReactStorage } from "ew-responsive-store";
+import { useStorage } from 'ew-responsive-store/preact';
 
-function App() {
-  const [theme, setTheme] = useReactStorage("theme", "light");
-  
-  // This will automatically update in other tabs when changed
-  const toggleTheme = () => {
-    setTheme(theme === "light" ? "dark" : "light");
-  };
+const [count, setCount, actions] = useStorage('count', 0);
+```
 
-  return (
-    <div className={`app ${theme}`}>
-      <button onClick={toggleTheme}>
-        Switch to {theme === "light" ? "dark" : "light"} theme
-      </button>
-    </div>
-  );
+### useStorage (Solid)
+
+Returns `[Accessor<T>, setter, StorageActions<T>]`:
+
+```tsx
+import { useStorage } from 'ew-responsive-store/solid';
+
+function Counter() {
+  const [count, setCount] = useStorage('count', 0);
+  return <button onClick={() => setCount(count() + 1)}>{count()}</button>;
 }
 ```
 
-### Error Handling
+### useStorage (Svelte)
 
-The hook will throw an error if storage is not available:
+Returns a Svelte store with `set` / `update` / `remove` / `clear` / `destroy`:
 
-```tsx
-import { useReactStorage } from "ew-responsive-store";
+```svelte
+<script>
+  import { useStorage } from 'ew-responsive-store/svelte';
 
-function SafeStorage() {
-  try {
-    const [data, setData] = useReactStorage("data", {});
-    return <div>Storage is available</div>;
-  } catch (error) {
-    return <div>Storage is not available: {error.message}</div>;
+  const store = useStorage('count', 0);
+  $: count = $store;
+
+  function reset() {
+    store.remove();
   }
+</script>
+
+<button on:click={reset}>Count: {count}</button>
+```
+
+### useStorage (Angular)
+
+Call it inside an injection context (component or service). Return value:
+
+```ts
+interface AngularStorageReturn<T> {
+  value: () => T;                                  // computed signal
+  setValue: (value: StorageUpdater<T>) => void;
+  updateValue: (updater: (current: T) => T) => void;
+  reset: () => void;
+  remove: () => void;
+  clear: () => void;
 }
 ```
 
-## parseStr
-
-The `parseStr` function is a utility for parsing string values. It provides two parsing modes: `EVAL` and `JSON`.
-
-### Type Definition
-
 ```ts
-function parseStr<T>(
-  str: string,
-  type: parseStrType = parseStrType.JSON
-): T | null;
+import { Component } from '@angular/core';
+import { useStorage } from 'ew-responsive-store/angular';
+
+@Component({
+  template: `
+    <div>Count: {{ storage.value() }}</div>
+    <button (click)="storage.setValue(storage.value() + 1)">+1</button>
+  `,
+})
+export class CounterComponent {
+  storage = useStorage('count', 0);
+}
 ```
 
-### Parameters
+The manager is released when the component's `DestroyRef` fires.
 
-| Parameter | Type           | Description                                  |
-| --------- | -------------- | -------------------------------------------- |
-| `str`     | `string`       | The string to parse                          |
-| `type`    | `parseStrType` | The parsing method to use (`JSON` or `EVAL`) |
+### useStorage (Vanilla JS)
 
-### Returns
-
-The parsed value of type `T`, or `null` if parsing fails.
-
-### Example
+Both the root entry and `/vanilla` resolve to the vanilla adapter:
 
 ```ts
-import { parseStr, ParseStrType } from "ew-responsive-store";
+import { useStorage } from 'ew-responsive-store';
 
-// Parse JSON
-const data = parseStr<{ name: string }>('{ "name": "John" }');
-// Result: { name: 'John' }
+const storage = useStorage('count', 0);
 
-// Execute JavaScript code
-const result = parseStr<number>("1 + 2", ParseStrType.EVAL);
-// Result: 3
+storage.value;              // current value
+storage.setValue(1);
+storage.updateValue((n) => n + 1);
+storage.remove();           // removes the key and falls back to the initial value
+storage.clear();            // clears keys managed by this library
+const unsubscribe = storage.subscribe((value) => console.log(value));
+storage.destroy();          // unsubscribes and releases the manager
 ```
 
-## Utility Functions
+---
+
+## Utilities
+
+### parseStr
+
+```ts
+function parseStr<T>(str: string, type?: ParseStrType): T | null;
+```
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `str` | `string` | - | String to parse |
+| `type` | `ParseStrType` | `ParseStrType.JSON` | `JSON`, `AUTO`, or the deprecated `EVAL` |
+
+```ts
+import { parseStr, ParseStrType } from 'ew-responsive-store';
+
+parseStr<{ name: string }>('{"name":"Alice"}');
+parseStr('dark', ParseStrType.AUTO); // 'dark'
+```
+
+> `ParseStrType.EVAL` is deprecated and throws under strict CSP. Do not use it in new code.
 
 ### isValidJSON
 
-Checks if a string is valid JSON.
-
 ```ts
-function isValidJSON(val: string): boolean;
+function isValidJSON(value: string): boolean;
 ```
 
 ### isStorageEnabled
 
-Checks if a storage type is enabled in the current environment.
-
 ```ts
-function isStorageEnabled(storage: Storage): boolean;
+function isStorageEnabled(storage?: Storage): boolean;
 ```
+
+Checks whether storage is usable (Safari private mode, quota limits, etc.). The result is cached.
+
+---
 
 ## Enums
 
 ### StoreType
 
-Defines the available storage types.
-
 ```ts
 enum StoreType {
-  LOCAL = "localStorage",
-  SESSION = "sessionStorage",
+  LOCAL = 'localStorage',
+  SESSION = 'sessionStorage',
 }
 ```
 
-### parseStrType
-
-Defines the available parsing methods for `parseStr`.
+### ParseStrType
 
 ```ts
-enum parseStrType {
-  EVAL = "eval",
-  JSON = "json",
+enum ParseStrType {
+  JSON = 'json',
+  AUTO = 'auto',
+  /** @deprecated Uses new Function and throws under strict CSP */
+  EVAL = 'eval',
 }
 ```
+
+---
+
+## Legacy API
+
+Before v0.0.1-beta.8, `useStorage` defaulted to `immediate: true` and React used a separate `useReactStorage`. Those interfaces are kept for compatibility only and behave differently:
+
+- Vue's old `useStorage` default for `immediate` is now `false`.
+- `useReactStorage` is now an alias of `useStorage`, whose return value is a three-element tuple.
+- The old `parseStr` only supported `JSON` / `EVAL`; `AUTO` was added and `EVAL` is deprecated.
+
+New projects should use the unified APIs above.

@@ -2,9 +2,9 @@
 
 ## Introduction
 
-If your project requires using session storage (either `localStorage` or `sessionStorage`) to persist data, and you want the data to be retained after a page refresh while also automatically updating the view when the data changes, `ew-responsive-store` is the perfect solution.
+If your project requires using web storage (either `localStorage` or `sessionStorage`) to persist data, and you want the data to be retained after a page refresh while also automatically updating the view when the data changes, `ew-responsive-store` is the perfect solution.
 
-It's about 4 KB gzipped and extremely easy to use. With just a single function call, you can make session storage data reactive, which can be applied to any framework-based project, even native JavaScript projects. The library also includes comprehensive unit tests and type inference.
+It's about 4 KB gzipped and extremely easy to use. With just a single function call, you can make storage data reactive, which can be applied to any framework-based project, even native JavaScript projects. The library also includes comprehensive unit tests and type inference.
 
 ## Installation
 
@@ -27,7 +27,7 @@ Since v0.0.3, `ew-responsive-store` supports multiple frameworks. You only need 
 npm install react
 
 # For Vue
-npm install @vue/reactivity @vue/shared
+npm install @vue/reactivity
 
 # For Preact
 npm install preact
@@ -81,7 +81,7 @@ import { useStorage } from 'ew-responsive-store';
 
 ## Basic Usage
 
-The core of the `ew-responsive-store` package exports two methods: `parseStr` and `useStorage`. The `useStorage` method is used to make session storage data reactive.
+The root entry of `ew-responsive-store` exports the vanilla JavaScript `useStorage`, along with `StoreType`, `ParseStrType`, the `StorageManager` APIs, and utilities such as `parseStr`, `isValidJSON`, and `isStorageEnabled`. The root `useStorage` turns `localStorage` / `sessionStorage` data into a reactive object; for Vue, React, and other frameworks, use their dedicated subpath entries.
 
 ### Basic Values
 

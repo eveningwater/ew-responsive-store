@@ -73,7 +73,7 @@ export default defineConfig({
       lang: "zh",
       label: "简体中文",
       title: "ew-responsive-store",
-      description: "让会话存储数据响应式化",
+      description: "让本地存储数据响应式化",
     },
   ],
 });
